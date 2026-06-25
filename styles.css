@@ -137,8 +137,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid #0b62d6; outline-offs
 .filter { padding: 11px 14px; border: 1px solid var(--line); border-radius: 99px; color: var(--ink); background: transparent; cursor: pointer; font: 600 11px var(--sans); }
 .filter span { margin-left: 8px; color: var(--ink-soft); font: 9px var(--mono); }
 .filter:hover, .filter.is-active { color: var(--paper); background: var(--ink); }.filter.is-active span { color: var(--acid); }
-.equipment-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 650px; gap: 16px; }
-.equipment-card { position: relative; min-width: 0; height: 650px; padding: 25px; display: grid; grid-template-rows: auto 240px 58px 84px 1fr auto; background: var(--paper); overflow: hidden; transition: transform .25s ease, opacity .25s ease; }
+.equipment-grid { width: 100%; display: grid; grid-template-columns: repeat(3, calc((100% - 32px) / 3)); grid-auto-rows: 650px; gap: 16px; align-items: stretch; justify-items: stretch; }
+.equipment-card { position: relative; width: 100%; min-width: 0; max-width: none; height: 650px; justify-self: stretch; padding: 25px; display: grid; grid-template-rows: auto 240px 58px 84px 1fr auto; background: var(--paper); overflow: hidden; transition: transform .25s ease, opacity .25s ease; }
 .equipment-card[hidden] { display: none; }
 .equipment-card:hover { transform: translateY(-4px); }
 .card-top { display: flex; justify-content: space-between; font: 9px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
@@ -157,6 +157,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #0b62d6; outline-offs
 .equipment-card h3 { align-self: end; margin: 0 0 10px; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font: 400 28px/1.05 var(--serif); }
 .equipment-card > p { max-width: 460px; margin: 0; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 4; color: var(--ink-soft); font-size: 12px; line-height: 1.65; }
 .equipment-meta { align-self: end; display: flex; justify-content: space-between; gap: 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font: 9px/1.4 var(--mono); text-transform: uppercase; }
+.equipment-meta span { min-width: 0; overflow-wrap: anywhere; }
 
 .access { display: grid; grid-template-columns: 1fr 1fr; gap: 9vw; }
 .access-intro > p:not(.section-index) { max-width: 530px; margin: 30px 0 0; color: var(--ink-soft); line-height: 1.75; }
@@ -194,7 +195,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #0b62d6; outline-offs
   .section-heading { grid-template-columns: 1fr; gap: 32px; }
   .spectrum { grid-template-columns: repeat(2, 1fr); }.spectrum-axis { display: none; }
   .spectrum-item { min-height: 360px; border-top: 1px solid var(--line); }
-  .equipment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 650px; }
+  .equipment-grid { grid-template-columns: repeat(2, calc((100% - 16px) / 2)); grid-auto-rows: 650px; }
   .equipment-card { height: 650px; }
   .access { grid-template-columns: 1fr; }
   .contact-copy { margin-left: 12%; }.contact-orbit { opacity: .5; }
@@ -214,7 +215,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #0b62d6; outline-offs
   .section-heading h2, .access h2 { font-size: 48px; }
   .spectrum { grid-template-columns: 1fr; margin-top: 58px; }.spectrum-item { min-height: 320px; }.spectrum-glyph { height: 140px; }
   .filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }.filter { flex: 0 0 auto; }
-  .equipment-grid { display: grid; grid-template-columns: 1fr; grid-auto-rows: 620px; }.equipment-card { height: 620px; margin-bottom: 0; }
+  .equipment-grid { display: grid; grid-template-columns: 100%; grid-auto-rows: 620px; }.equipment-card { width: 100%; height: 620px; margin-bottom: 0; }
   .access-steps { margin-top: 18px; }
   .contact { min-height: 620px; padding-top: 70px; }.contact-copy { margin-left: 0; padding-top: 90px; }.contact h2 { font-size: 68px; }.contact-orbit { width: 460px; height: 460px; left: -280px; }
   .site-footer { align-items: flex-start; flex-direction: column; gap: 24px; }.site-footer p { order: 3; }
