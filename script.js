@@ -257,6 +257,59 @@ document.querySelectorAll(".filter").forEach(button => {
 
 const menuButton = document.querySelector(".menu-toggle");
 const navigation = document.querySelector("#site-nav");
+const inquiryDialog = document.querySelector("#inquiry-dialog");
+const inquiryForm = document.querySelector("#inquiry-form");
+const inquiryEquipment = document.querySelector("#inquiry-equipment");
+const inquiryRecipient = document.querySelector("#inquiry-recipient");
+const prepareInquiry = document.querySelector("#prepare-inquiry");
+
+const validContactEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+
+const populateInquiryEquipment = () => {
+  const currentValue = inquiryEquipment.value;
+  const options = equipment
+    .map(item => {
+      const available = validContactEmail(item.email);
+      return `<option value="${clean(item.id)}"${available ? "" : " disabled"}>${clean(item.name)}${available ? "" : " — contact email needed"}</option>`;
+    })
+    .join("");
+  inquiryEquipment.innerHTML = `<option value="">Choose equipment</option>${options}`;
+  if ([...inquiryEquipment.options].some(option => option.value === currentValue && !option.disabled)) {
+    inquiryEquipment.value = currentValue;
+  }
+  updateInquiryRecipient();
+};
+
+const selectedInquiryEquipment = () => equipment.find(item => item.id === inquiryEquipment.value);
+
+const updateInquiryRecipient = () => {
+  const item = selectedInquiryEquipment();
+  inquiryRecipient.classList.remove("is-ready", "is-unavailable");
+  if (!item) {
+    inquiryRecipient.textContent = equipment.some(candidate => validContactEmail(candidate.email))
+      ? "Select equipment to see the responsible contact."
+      : "No public equipment record currently has a contact email. Add one in the Equipment Registry.";
+    if (!equipment.some(candidate => validContactEmail(candidate.email))) inquiryRecipient.classList.add("is-unavailable");
+    prepareInquiry.disabled = true;
+    return;
+  }
+  if (!validContactEmail(item.email)) {
+    inquiryRecipient.textContent = "This equipment does not yet have a valid contact email.";
+    inquiryRecipient.classList.add("is-unavailable");
+    prepareInquiry.disabled = true;
+    return;
+  }
+  const contactName = item.custodian && item.custodian !== "Faculty owner to verify" ? item.custodian : "Responsible equipment contact";
+  inquiryRecipient.textContent = `${contactName} · ${item.email}${item.facilityName ? ` · ${item.facilityName}` : ""}`;
+  inquiryRecipient.classList.add("is-ready");
+  prepareInquiry.disabled = false;
+};
+
+const openInquiry = () => {
+  populateInquiryEquipment();
+  inquiryDialog.showModal();
+  setTimeout(() => inquiryEquipment.focus(), 30);
+};
 
 menuButton.addEventListener("click", () => {
   const open = menuButton.getAttribute("aria-expanded") === "true";
@@ -277,7 +330,42 @@ window.addEventListener("storage", event => {
   updatePublicSummary();
   const activeFilter = document.querySelector(".filter.is-active")?.dataset.filter || "all";
   renderEquipment(activeFilter);
+  populateInquiryEquipment();
 });
 
 updatePublicSummary();
 renderEquipment();
+populateInquiryEquipment();
+
+document.querySelector("#open-inquiry").addEventListener("click", openInquiry);
+document.querySelector("#close-inquiry").addEventListener("click", () => inquiryDialog.close());
+inquiryEquipment.addEventListener("change", updateInquiryRecipient);
+inquiryDialog.addEventListener("click", event => {
+  if (event.target === inquiryDialog) inquiryDialog.close();
+});
+
+inquiryForm.addEventListener("submit", event => {
+  event.preventDefault();
+  if (!inquiryForm.reportValidity()) return;
+  const item = selectedInquiryEquipment();
+  if (!item || !validContactEmail(item.email)) {
+    updateInquiryRecipient();
+    return;
+  }
+  const visitorName = document.querySelector("#inquiry-name").value.trim();
+  const visitorEmail = document.querySelector("#inquiry-email").value.trim();
+  const organization = document.querySelector("#inquiry-organization").value.trim();
+  const message = document.querySelector("#inquiry-message").value.trim();
+  const subject = `Equipment inquiry: ${item.name}`;
+  const body = [
+    `Equipment: ${item.name}`,
+    `Facility: ${item.facilityName || "Physics Program facility"}`,
+    `From: ${visitorName}`,
+    `Email: ${visitorEmail}`,
+    organization ? `Organization / research group: ${organization}` : "",
+    "",
+    "Project question:",
+    message
+  ].filter((line, index, lines) => line || (index > 0 && lines[index - 1])).join("\n");
+  window.location.href = `mailto:${item.email.trim()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+});

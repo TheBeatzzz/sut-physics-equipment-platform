@@ -158,7 +158,10 @@
             <label>Manufacturer<input name="manufacturer" placeholder="Manufacturer" /></label>
             <label>Model<input name="model" placeholder="Model number" /></label>
             <label>Equipment category<select name="category" required><option value="">Select category</option><option>Imaging</option><option>Spectroscopy</option><option>Materials preparation</option><option>Electrical measurement</option><option>Optics & photonics</option><option>Radiation detection</option><option>Computing</option><option>General laboratory</option><option>Other</option></select></label>
-            <label class="span-2">Short description<textarea name="description" rows="3" placeholder="What does this equipment enable researchers to do?"></textarea></label>
+            <label class="span-2 description-field">
+              <span class="description-label">Short description <output id="description-counter" for="equipment-description" aria-live="polite">0 / 800</output></span>
+              <textarea id="equipment-description" name="description" rows="5" maxlength="800" placeholder="What does this equipment enable researchers to do?"></textarea>
+            </label>
           </div></div>
           <div class="form-section"><div class="form-section-title"><span>02</span><div><h3>Location & ownership</h3><p>Make the equipment findable and assign responsibility.</p></div></div><div class="form-grid">
             <label>Facility <span aria-hidden="true">*</span><select id="record-facility" name="facilityId" required></select></label>

@@ -1,4 +1,5 @@
 const STORAGE_KEY = "sut-physics-equipment-registry-v3";
+const DESCRIPTION_LIMIT = 800;
 
 const sampleRecord = (id, name, category, facilityId, researchGroup, reviewStatus = "Verified", publicReady = true) => ({
   id,
@@ -268,6 +269,9 @@ function openRecordDialog(mode = "manager", id = null) {
     });
     $("#record-id").value = item.id;
   }
+  const descriptionField = $("#equipment-description");
+  descriptionField.value = descriptionField.value.slice(0, DESCRIPTION_LIMIT);
+  updateDescriptionCounter();
   renderMediaPreviews();
   $("#record-dialog").showModal();
   setTimeout(() => form.elements.name.focus(), 50);
@@ -275,12 +279,22 @@ function openRecordDialog(mode = "manager", id = null) {
 
 function recordFromForm(form, saveMode) {
   const data = Object.fromEntries(new FormData(form).entries());
+  data.description = String(data.description || "").slice(0, DESCRIPTION_LIMIT);
   const existing = db.equipment.find(item => item.id === data.id);
   const numericIds = db.equipment.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
   const id = existing?.id || `EQ-${String(Math.max(0, ...numericIds) + 1).padStart(3,"0")}`;
   const reviewStatus = saveMode === "draft" ? "Draft" : recordMode === "faculty" ? "Submitted" : existing?.reviewStatus === "Verified" ? "Verified" : "Verified";
   if (pendingFeaturePhoto) pendingFeaturePhoto.alt = $("#feature-photo-alt").value.trim();
   return { ...existing, ...data, id, publicReady: form.elements.publicReady.checked, featurePhoto: pendingFeaturePhoto, gallery: pendingGallery, reviewStatus, createdAt: existing?.createdAt || today(), updatedAt: today(), sample: existing?.sample || false };
+}
+
+function updateDescriptionCounter() {
+  const field = $("#equipment-description");
+  const counter = $("#description-counter");
+  const length = field.value.length;
+  counter.textContent = `${length} / ${DESCRIPTION_LIMIT}`;
+  counter.classList.toggle("is-near-limit", length >= 700 && length < DESCRIPTION_LIMIT);
+  counter.classList.toggle("is-at-limit", length >= DESCRIPTION_LIMIT);
 }
 
 function resizeImage(file, maxDimension = 1200, quality = 0.76) {
@@ -366,6 +380,13 @@ $$('[data-action="new-record"]').forEach(button => button.addEventListener("clic
 $$('[data-action="faculty-submit"]').forEach(button => button.addEventListener("click", () => openRecordDialog("faculty")));
 $$('[data-action="new-facility"]').forEach(button => button.addEventListener("click", () => { $("#facility-form").reset(); $("#facility-dialog").showModal(); }));
 $$('[data-close]').forEach(button => button.addEventListener("click", () => $(`#${button.dataset.close}`).close()));
+
+$("#equipment-description").addEventListener("input", event => {
+  if (event.currentTarget.value.length > DESCRIPTION_LIMIT) {
+    event.currentTarget.value = event.currentTarget.value.slice(0, DESCRIPTION_LIMIT);
+  }
+  updateDescriptionCounter();
+});
 
 $("#feature-photo-input").addEventListener("change", async event => {
   const file = event.target.files[0];
@@ -484,6 +505,10 @@ $("#import-json").addEventListener("change", async event => {
   try {
     const imported = JSON.parse(await file.text());
     if (!Array.isArray(imported.equipment) || !Array.isArray(imported.facilities)) throw new Error("Invalid schema");
+    imported.equipment = imported.equipment.map(item => ({
+      ...item,
+      description: String(item.description || "").slice(0, DESCRIPTION_LIMIT)
+    }));
     const confirmed = await askConfirm("Replace the browser database?", `Import ${imported.equipment.length} equipment records and ${imported.facilities.length} facilities from “${file.name}”?`);
     if (confirmed) { db = imported; save(); renderAll(); showView("overview"); showToast("Registry backup imported"); }
   } catch { showToast("Could not import: file is not a valid registry backup"); }

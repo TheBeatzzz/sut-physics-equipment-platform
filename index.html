@@ -167,11 +167,56 @@
         <div class="contact-copy">
           <h2 id="contact-title">What could you<br />measure next?</h2>
           <p>Bring us the question. We’ll help map the route from sample preparation to interpretable data.</p>
-          <a class="button button-light" href="mailto:research@example.edu">Discuss a project <span aria-hidden="true">↗</span></a>
-          <small>Placeholder contact: research@example.edu</small>
+          <button class="button button-light" id="open-inquiry" type="button">Discuss a project <span aria-hidden="true">↗</span></button>
+          <small>Select an equipment record to contact its responsible person.</small>
         </div>
       </section>
     </main>
+
+    <dialog id="inquiry-dialog" class="inquiry-dialog">
+      <form id="inquiry-form">
+        <div class="inquiry-head">
+          <div>
+            <p class="section-index">Project inquiry</p>
+            <h2>Discuss an equipment project</h2>
+          </div>
+          <button class="inquiry-close" id="close-inquiry" type="button" aria-label="Close inquiry form">×</button>
+        </div>
+        <div class="inquiry-body">
+          <label class="inquiry-field">
+            <span>Equipment of interest <b aria-hidden="true">*</b></span>
+            <select id="inquiry-equipment" required>
+              <option value="">Choose equipment</option>
+            </select>
+          </label>
+          <div id="inquiry-recipient" class="inquiry-recipient" role="status">
+            Select equipment to see the responsible contact.
+          </div>
+          <div class="inquiry-grid">
+            <label class="inquiry-field">
+              <span>Your name <b aria-hidden="true">*</b></span>
+              <input id="inquiry-name" type="text" required autocomplete="name" />
+            </label>
+            <label class="inquiry-field">
+              <span>Your email <b aria-hidden="true">*</b></span>
+              <input id="inquiry-email" type="email" required autocomplete="email" />
+            </label>
+            <label class="inquiry-field inquiry-span">
+              <span>Organization or research group</span>
+              <input id="inquiry-organization" type="text" autocomplete="organization" />
+            </label>
+            <label class="inquiry-field inquiry-span">
+              <span>Project question <b aria-hidden="true">*</b></span>
+              <textarea id="inquiry-message" rows="7" maxlength="2000" required placeholder="Describe your sample, measurement need, timeline, or research question."></textarea>
+            </label>
+          </div>
+        </div>
+        <div class="inquiry-foot">
+          <p>This opens your email application. No information is submitted by this website.</p>
+          <button class="button button-primary" id="prepare-inquiry" type="submit" disabled>Prepare email <span aria-hidden="true">↗</span></button>
+        </div>
+      </form>
+    </dialog>
 
     <footer class="site-footer">
       <div class="identity identity-footer">
