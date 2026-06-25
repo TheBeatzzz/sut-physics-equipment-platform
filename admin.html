@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Internal equipment and facilities registry for the Physics Program at Suranaree University of Technology." />
+    <title>Physics Equipment Registry · SUT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="admin.css" />
+    <script src="admin.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to workspace</a>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>SUT Physics</strong><small>Equipment Registry</small></span>
+      </div>
+
+      <nav class="side-nav" aria-label="Registry sections">
+        <button class="nav-item is-active" data-view="overview" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>
+          Overview
+        </button>
+        <button class="nav-item" data-view="equipment" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
+          Equipment
+          <span class="nav-count" id="equipment-nav-count">0</span>
+        </button>
+        <button class="nav-item" data-view="submissions" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>
+          Submissions
+          <span class="nav-count is-alert" id="submission-nav-count">0</span>
+        </button>
+        <button class="nav-item" data-view="facilities" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 12h2v2H9zM13 12h2v2h-2zM9 17h6"/></svg>
+          Facilities
+        </button>
+        <button class="nav-item" data-view="data" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12M8 11l4 4 4-4M5 20h14"/></svg>
+          Data & export
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="storage-state"><span></span><div><strong>Prototype storage</strong><small>Saved in this browser only</small></div></div>
+        <a href="index.html">View public infographic <span aria-hidden="true">↗</span></a>
+      </div>
+    </aside>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="mobile-menu" type="button" aria-controls="sidebar" aria-expanded="false"><span class="sr-only">Open navigation</span><i></i><i></i></button>
+        <div class="context">
+          <span class="context-kicker">Physics Program · Suranaree University of Technology</span>
+          <strong id="page-context">Registry overview</strong>
+        </div>
+        <div class="topbar-actions">
+          <label class="global-search">
+            <span class="sr-only">Search equipment</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>
+            <input id="global-search" type="search" placeholder="Search registry…" autocomplete="off" />
+            <kbd>/</kbd>
+          </label>
+          <button class="button button-primary" type="button" data-action="new-record"><span aria-hidden="true">＋</span> Add equipment</button>
+          <div class="user-chip" title="Prototype user"><span>PM</span><div><strong>Program manager</strong><small>Registry editor</small></div></div>
+        </div>
+      </header>
+
+      <main id="workspace" class="workspace" tabindex="-1">
+        <section class="view is-visible" data-view-panel="overview" aria-labelledby="overview-title">
+          <div class="view-heading">
+            <div><p class="eyebrow">Registry overview</p><h1 id="overview-title">Research infrastructure,<br /><em>in one clear view.</em></h1></div>
+            <div class="heading-note"><span class="live-dot"></span><p><strong>Prototype dataset</strong><br />Sample records are marked and must be replaced with verified program data.</p></div>
+          </div>
+
+          <div class="metric-grid" id="metric-grid"></div>
+
+          <div class="overview-grid">
+            <section class="panel attention-panel" aria-labelledby="attention-title">
+              <div class="panel-heading"><div><p class="panel-kicker">Action queue</p><h2 id="attention-title">Needs attention</h2></div><button class="text-button" type="button" data-view-jump="submissions">Review all <span>→</span></button></div>
+              <div id="attention-list" class="attention-list"></div>
+            </section>
+
+            <section class="panel coverage-panel" aria-labelledby="coverage-title">
+              <div class="panel-heading"><div><p class="panel-kicker">Data quality</p><h2 id="coverage-title">Registry coverage</h2></div><span class="data-date" id="data-date"></span></div>
+              <div id="coverage-chart" class="coverage-chart"></div>
+            </section>
+          </div>
+
+          <section class="panel recent-panel" aria-labelledby="recent-title">
+            <div class="panel-heading"><div><p class="panel-kicker">Latest changes</p><h2 id="recent-title">Recently updated</h2></div><button class="text-button" type="button" data-view-jump="equipment">Open registry <span>→</span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>Equipment</th><th>Facility</th><th>Custodian</th><th>Status</th><th>Updated</th></tr></thead><tbody id="recent-table"></tbody></table></div>
+          </section>
+        </section>
+
+        <section class="view" data-view-panel="equipment" aria-labelledby="equipment-title">
+          <div class="view-heading compact-heading">
+            <div><p class="eyebrow">Complete inventory</p><h1 id="equipment-title">Equipment registry</h1><p class="heading-description">Search, verify, and maintain every instrument record across the Physics Program.</p></div>
+            <button class="button button-primary" type="button" data-action="new-record"><span aria-hidden="true">＋</span> Add equipment</button>
+          </div>
+
+          <div class="registry-tools">
+            <label class="table-search"><span class="sr-only">Search equipment records</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input id="equipment-search" type="search" placeholder="Search name, code, custodian…" /></label>
+            <label>Facility<select id="facility-filter"><option value="all">All facilities</option></select></label>
+            <label>Status<select id="status-filter"><option value="all">All statuses</option><option>Operational</option><option>Limited access</option><option>Maintenance</option><option>Inactive</option></select></label>
+            <label>Review<select id="review-filter"><option value="all">All reviews</option><option value="Verified">Verified</option><option value="Submitted">Submitted</option><option value="Draft">Draft</option></select></label>
+            <button class="icon-button" id="clear-filters" type="button" title="Clear filters"><span class="sr-only">Clear filters</span>↺</button>
+          </div>
+
+          <div class="registry-summary"><p><strong id="registry-result-count">0</strong> records</p><p><span class="legend-dot verified"></span> Verified <span class="legend-dot submitted"></span> Awaiting review <span class="legend-dot draft"></span> Draft</p></div>
+          <div class="panel table-panel"><div class="table-wrap"><table class="registry-table"><thead><tr><th>Equipment</th><th>Facility & location</th><th>Custodian</th><th>Operational status</th><th>Review</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="equipment-table"></tbody></table></div><div id="registry-empty" class="empty-state" hidden><span>⌕</span><h2>No matching equipment</h2><p>Try changing the search or filters.</p></div></div>
+        </section>
+
+        <section class="view" data-view-panel="submissions" aria-labelledby="submissions-title">
+          <div class="view-heading compact-heading">
+            <div><p class="eyebrow">Faculty contributions</p><h1 id="submissions-title">Submission queue</h1><p class="heading-description">Review equipment information submitted by faculty before it enters the verified registry.</p></div>
+            <button class="button button-accent" type="button" data-action="faculty-submit"><span aria-hidden="true">＋</span> Faculty submission form</button>
+          </div>
+          <div class="submission-layout">
+            <aside class="queue-summary panel"><p class="panel-kicker">Review pipeline</p><div id="queue-metrics"></div><div class="queue-help"><strong>Review standard</strong><p>Confirm the instrument identity, location, responsible person, access conditions, and safety requirements before approval.</p></div></aside>
+            <div id="submission-list" class="submission-list"></div>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="facilities" aria-labelledby="facilities-title">
+          <div class="view-heading compact-heading">
+            <div><p class="eyebrow">Spaces & laboratories</p><h1 id="facilities-title">Facilities directory</h1><p class="heading-description">Group equipment by the physical spaces where research, teaching, and technical support happen.</p></div>
+            <button class="button button-primary" type="button" data-action="new-facility"><span aria-hidden="true">＋</span> Add facility</button>
+          </div>
+          <div id="facility-grid" class="facility-grid"></div>
+        </section>
+
+        <section class="view" data-view-panel="data" aria-labelledby="data-title">
+          <div class="view-heading compact-heading"><div><p class="eyebrow">Portability & governance</p><h1 id="data-title">Data & export</h1><p class="heading-description">Keep an offline backup or move verified records into a production database.</p></div></div>
+          <div class="data-grid">
+            <section class="panel data-card"><span class="data-icon">{ }</span><h2>Export full registry</h2><p>Download equipment, facilities, and metadata as structured JSON.</p><button class="button button-secondary" type="button" id="export-json">Download JSON <span>↓</span></button></section>
+            <section class="panel data-card"><span class="data-icon">CSV</span><h2>Export equipment table</h2><p>Download a spreadsheet-ready CSV for checking and reporting.</p><button class="button button-secondary" type="button" id="export-csv">Download CSV <span>↓</span></button></section>
+            <section class="panel data-card"><span class="data-icon">↥</span><h2>Import a backup</h2><p>Restore a JSON file created by this prototype. Existing browser data will be replaced.</p><label class="button button-secondary file-button">Choose JSON <input type="file" id="import-json" accept="application/json,.json" /></label></section>
+          </div>
+          <section class="production-note"><div class="production-visual" aria-hidden="true"><i></i><i></i><i></i></div><div><p class="panel-kicker">Before production use</p><h2>Connect identity, database, and file storage.</h2><p>This prototype stores data only in the current browser. A deployed internal system should use SUT authentication, role-based permissions, a managed database, secure image/document storage, audit history, backups, and institutional privacy review.</p><ul><li>Single sign-on and user roles</li><li>PostgreSQL or equivalent managed database</li><li>Change history and approval audit log</li><li>Secure media uploads and scheduled backups</li></ul></div></section>
+          <section class="danger-zone panel"><div><p class="panel-kicker">Prototype controls</p><h2>Reset sample database</h2><p>Remove browser edits and restore the original sample records.</p></div><button class="button button-danger" id="reset-data" type="button">Reset sample data</button></section>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="record-dialog" class="modal">
+      <form id="record-form" method="dialog">
+        <div class="modal-head"><div><p class="eyebrow" id="record-form-kicker">Equipment record</p><h2 id="record-form-title">Add equipment</h2></div><button class="close-button" type="button" data-close="record-dialog"><span class="sr-only">Close</span>×</button></div>
+        <div class="modal-body">
+          <input type="hidden" id="record-id" name="id" />
+          <div class="form-section"><div class="form-section-title"><span>01</span><div><h3>Identity</h3><p>Name the instrument so colleagues can recognize it.</p></div></div><div class="form-grid">
+            <label class="span-2">Equipment name <span aria-hidden="true">*</span><input name="name" required placeholder="e.g. UV–Vis Spectrophotometer" /></label>
+            <label>Asset / inventory code<input name="assetCode" placeholder="e.g. SUT-PHY-001" /></label>
+            <label>Manufacturer<input name="manufacturer" placeholder="Manufacturer" /></label>
+            <label>Model<input name="model" placeholder="Model number" /></label>
+            <label>Equipment category<select name="category" required><option value="">Select category</option><option>Imaging</option><option>Spectroscopy</option><option>Materials preparation</option><option>Electrical measurement</option><option>Optics & photonics</option><option>Radiation detection</option><option>Computing</option><option>General laboratory</option><option>Other</option></select></label>
+            <label class="span-2">Short description<textarea name="description" rows="3" placeholder="What does this equipment enable researchers to do?"></textarea></label>
+          </div></div>
+          <div class="form-section"><div class="form-section-title"><span>02</span><div><h3>Location & ownership</h3><p>Make the equipment findable and assign responsibility.</p></div></div><div class="form-grid">
+            <label>Facility <span aria-hidden="true">*</span><select id="record-facility" name="facilityId" required></select></label>
+            <label>Room / location<input name="room" placeholder="e.g. Building C2, Room 311" /></label>
+            <label>Custodian / responsible person <span aria-hidden="true">*</span><input name="custodian" required placeholder="Name and title" /></label>
+            <label>Contact email<input type="email" name="email" placeholder="name@sut.ac.th" /></label>
+            <label>Research group<input name="researchGroup" placeholder="Group or laboratory" /></label>
+            <label>Acquisition year<input type="number" name="acquisitionYear" min="1950" max="2100" placeholder="YYYY" /></label>
+          </div></div>
+          <div class="form-section"><div class="form-section-title"><span>03</span><div><h3>Access & condition</h3><p>Document availability, training, and maintenance.</p></div></div><div class="form-grid">
+            <label>Operational status<select name="status" required><option>Operational</option><option>Limited access</option><option>Maintenance</option><option>Inactive</option></select></label>
+            <label>Access level<select name="access"><option>Internal use</option><option>Shared by arrangement</option><option>Specialist operated</option><option>Open after training</option><option>Not currently available</option></select></label>
+            <label>Last maintenance<input type="date" name="lastMaintenance" /></label>
+            <label>Next maintenance<input type="date" name="nextMaintenance" /></label>
+            <label class="span-2">Training or safety requirements<textarea name="safety" rows="2" placeholder="Required induction, PPE, radiation safety, laser training…"></textarea></label>
+            <label class="checkbox-label span-2"><input type="checkbox" name="publicReady" /><span><strong>Candidate for public facility profile</strong><small>Content can be considered for the public research webpage after verification.</small></span></label>
+          </div></div>
+          <div class="form-section media-section"><div class="form-section-title"><span>04</span><div><h3>Photos & use cases</h3><p>Add a primary image and a small gallery showing the system, setup, samples, or applications.</p></div></div><div class="media-fields">
+            <div class="media-field">
+              <div class="media-field-head"><div><strong>Feature photo</strong><small>Shown as the primary image for this record.</small></div><label class="media-upload">Choose photo<input id="feature-photo-input" type="file" accept="image/jpeg,image/png,image/webp" /></label></div>
+              <div id="feature-photo-preview" class="feature-photo-preview empty"><span>No feature photo selected</span></div>
+              <label id="feature-alt-label" class="media-alt" hidden>Feature photo description<input id="feature-photo-alt" type="text" placeholder="Describe the image for people who cannot see it" /></label>
+            </div>
+            <div class="media-field">
+              <div class="media-field-head"><div><strong>Use-case gallery</strong><small>Up to 6 photos. Images are resized before browser storage.</small></div><label class="media-upload">Add photos<input id="gallery-photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label></div>
+              <div id="gallery-photo-preview" class="gallery-photo-preview"><p>No gallery photos selected</p></div>
+            </div>
+            <p class="storage-warning"><strong>Prototype note:</strong> photos are saved only in this browser. Production use should upload them to secure institutional file storage.</p>
+          </div></div>
+          <div class="form-section submitter-section" id="submitter-section"><div class="form-section-title"><span>05</span><div><h3>Faculty submitter</h3><p>Identify who provided this information for follow-up.</p></div></div><div class="form-grid">
+            <label>Your name <span aria-hidden="true">*</span><input name="submitterName" placeholder="Faculty member name" /></label>
+            <label>Your SUT email<input type="email" name="submitterEmail" placeholder="name@sut.ac.th" /></label>
+            <label class="span-2">Notes for the registry manager<textarea name="submitterNotes" rows="2" placeholder="Anything the reviewer should verify or update"></textarea></label>
+          </div></div>
+        </div>
+        <div class="modal-foot"><p><span aria-hidden="true">*</span> Required fields</p><div><button class="button button-quiet" type="button" data-close="record-dialog">Cancel</button><button class="button button-secondary" type="submit" name="saveMode" value="draft">Save draft</button><button class="button button-primary" type="submit" name="saveMode" value="submit" id="record-primary-action">Save record</button></div></div>
+      </form>
+    </dialog>
+
+    <dialog id="facility-dialog" class="modal modal-small">
+      <form id="facility-form" method="dialog">
+        <div class="modal-head"><div><p class="eyebrow">Facilities directory</p><h2>Add facility</h2></div><button class="close-button" type="button" data-close="facility-dialog"><span class="sr-only">Close</span>×</button></div>
+        <div class="modal-body"><div class="form-grid">
+          <label class="span-2">Facility name <span aria-hidden="true">*</span><input name="name" required placeholder="e.g. Advanced Materials Laboratory" /></label>
+          <label>Building<input name="building" placeholder="Building name or code" /></label><label>Room<input name="room" placeholder="Room number" /></label>
+          <label class="span-2">Facility lead<input name="lead" placeholder="Responsible person" /></label>
+          <label class="span-2">Description<textarea name="description" rows="3" placeholder="Research focus and capabilities"></textarea></label>
+        </div></div>
+        <div class="modal-foot"><span></span><div><button class="button button-quiet" type="button" data-close="facility-dialog">Cancel</button><button class="button button-primary" type="submit">Add facility</button></div></div>
+      </form>
+    </dialog>
+
+    <dialog id="confirm-dialog" class="confirm-dialog">
+      <form method="dialog"><span class="confirm-icon">!</span><h2 id="confirm-title">Confirm action</h2><p id="confirm-message"></p><div><button class="button button-quiet" value="cancel">Cancel</button><button class="button button-danger" id="confirm-action" value="confirm">Confirm</button></div></form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><p></p></div>
+  </body>
+</html>

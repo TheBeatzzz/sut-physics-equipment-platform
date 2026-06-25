@@ -1,0 +1,498 @@
+const STORAGE_KEY = "sut-physics-equipment-registry-v3";
+
+const sampleRecord = (id, name, category, facilityId, researchGroup, reviewStatus = "Verified", publicReady = true) => ({
+  id,
+  name,
+  assetCode: `SAMPLE-${id.slice(-3)}`,
+  manufacturer: "To be verified",
+  model: "To be verified",
+  category,
+  description: `Example registry record for ${name.toLowerCase()}. Scope and capabilities must be confirmed by the responsible faculty member.`,
+  facilityId,
+  room: "Location to be verified",
+  custodian: "Faculty owner to verify",
+  email: "",
+  researchGroup,
+  acquisitionYear: "",
+  status: "Operational",
+  access: "Shared by arrangement",
+  lastMaintenance: "",
+  nextMaintenance: "",
+  safety: "Training and safety requirements to be verified.",
+  publicReady,
+  reviewStatus,
+  submitterName: reviewStatus === "Verified" ? "Example dataset" : "Example faculty submission",
+  submitterEmail: "",
+  submitterNotes: "Replace example metadata with verified institutional information.",
+  featurePhoto: null,
+  gallery: [],
+  createdAt: "2026-06-20",
+  updatedAt: "2026-06-25",
+  sample: true
+});
+
+const sampleDatabase = {
+  meta: { version: 3, institution: "Suranaree University of Technology", program: "Physics Program", prototype: true },
+  facilities: [
+    { id: "FAC-01", name: "Advanced Microscopy & Biomedical Photonics Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for confocal imaging, fluorescence lifetime, optical coherence tomography, and biomedical optical design.", color: "#8fd8c8" },
+    { id: "FAC-02", name: "Infrared & Optical Spectroscopy Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for infrared spectroscopy, surface plasmon analysis, and optical reflectance and transmittance measurements.", color: "#9bc7ee" },
+    { id: "FAC-03", name: "Ultrafast Laser & Optical Data Systems Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for short-pulse lasers, swept laser systems, and high-speed optical data acquisition.", color: "#f4c26d" },
+    { id: "FAC-04", name: "Advanced Materials Fabrication Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for electrospinning, advanced 3D printing, and materials testing workflows.", color: "#e8a89a" },
+    { id: "FAC-05", name: "Optical Fiber & Integrated Photonics Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for optical fiber sensors and photonics-on-chip system design.", color: "#b8d276" },
+    { id: "FAC-06", name: "Quantum Computing Laboratory", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility for quantum computing research, design, simulation, and experimental activities.", color: "#c1b2df" },
+    { id: "FAC-07", name: "AI, Machine Vision & Medical Intelligence Laboratory", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for deep learning, machine vision, and AI-assisted medical diagnosis system design and implementation.", color: "#7fc5b2" }
+  ],
+  equipment: [
+    sampleRecord("EQ-001", "Photon Counting Scanning Confocal Microscopy", "Imaging", "FAC-01", "Biomedical photonics"),
+    sampleRecord("EQ-002", "Fluorescent Life-Time Measurement", "Optics & photonics", "FAC-01", "Biomedical photonics"),
+    sampleRecord("EQ-003", "Optical Coherence Tomography Design and Applications", "Imaging", "FAC-01", "Biomedical photonics", "Submitted"),
+    sampleRecord("EQ-004", "Fourier Transform Infrared Spectroscopy Lab", "Spectroscopy", "FAC-02", "Optical spectroscopy"),
+    sampleRecord("EQ-005", "Mid IR Spectroscopy Lab", "Spectroscopy", "FAC-02", "Infrared photonics"),
+    sampleRecord("EQ-006", "Short Pulse Laser Laboratory and Applications", "Optics & photonics", "FAC-03", "Ultrafast photonics", "Submitted"),
+    sampleRecord("EQ-007", "Electrospinning Material Fabrication and Testing", "Materials preparation", "FAC-04", "Functional materials"),
+    sampleRecord("EQ-008", "Advanced 3D Printing Lab", "Materials preparation", "FAC-04", "Advanced fabrication", "Draft", false),
+    sampleRecord("EQ-009", "Surface Plasmon Analysis", "Spectroscopy", "FAC-02", "Optical sensing"),
+    sampleRecord("EQ-010", "Quantum Computing Lab", "Computing", "FAC-06", "Quantum technologies", "Submitted"),
+    sampleRecord("EQ-011", "Optical Fiber Sensor Fabrication and Testing", "Optics & photonics", "FAC-05", "Fiber optics"),
+    sampleRecord("EQ-012", "Design of Photonics on Chip Systems", "Optics & photonics", "FAC-05", "Integrated photonics", "Draft", false),
+    sampleRecord("EQ-013", "Optical Vein Finder Design", "Optics & photonics", "FAC-01", "Biomedical photonics", "Submitted"),
+    sampleRecord("EQ-014", "Ultra High Speed Optical Data Acquisition Design and Testing", "Optics & photonics", "FAC-03", "Optical instrumentation"),
+    sampleRecord("EQ-015", "Optical Reflectance and Transmittance Analysis", "Spectroscopy", "FAC-02", "Optical characterization"),
+    sampleRecord("EQ-016", "High Speed Frequency Swept Laser and Applications", "Optics & photonics", "FAC-03", "Tunable laser systems", "Submitted"),
+    sampleRecord("EQ-017", "Deep Learning Lab", "Computing", "FAC-07", "Artificial intelligence"),
+    sampleRecord("EQ-018", "Machine Vision Lab", "Imaging", "FAC-07", "Computer vision", "Submitted"),
+    sampleRecord("EQ-019", "AI-Assisted Medical Diagnosis System Design and Implementation Lab", "Computing", "FAC-07", "Medical artificial intelligence", "Submitted")
+  ]
+};
+
+const clone = value => JSON.parse(JSON.stringify(value));
+const loadDatabase = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : clone(sampleDatabase);
+  } catch { return clone(sampleDatabase); }
+};
+
+let db = loadDatabase();
+let activeView = "overview";
+let recordMode = "manager";
+let toastTimer;
+let pendingFeaturePhoto = null;
+let pendingGallery = [];
+
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+const today = () => new Date().toISOString().slice(0, 10);
+const clean = value => String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+const slug = value => String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const facilityFor = id => db.facilities.find(item => item.id === id);
+const formatDate = value => value ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "Not recorded";
+const save = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    return true;
+  } catch {
+    showToast("Browser storage is full. Remove some photos or export the registry.");
+    return false;
+  }
+};
+
+function showToast(message) {
+  clearTimeout(toastTimer);
+  $("#toast p").textContent = message;
+  $("#toast").classList.add("is-visible");
+  toastTimer = setTimeout(() => $("#toast").classList.remove("is-visible"), 2800);
+}
+
+function showView(view, options = {}) {
+  activeView = view;
+  $$(".nav-item").forEach(item => item.classList.toggle("is-active", item.dataset.view === view));
+  $$(".view").forEach(panel => panel.classList.toggle("is-visible", panel.dataset.viewPanel === view));
+  const labels = { overview: "Registry overview", equipment: "Equipment registry", submissions: "Faculty submissions", facilities: "Facilities directory", data: "Data & export" };
+  $("#page-context").textContent = labels[view];
+  $("#sidebar").classList.remove("is-open");
+  $(".mobile-menu").setAttribute("aria-expanded", "false");
+  if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: "smooth" });
+  if (view === "equipment" && options.query) {
+    $("#equipment-search").value = options.query;
+    renderEquipmentTable();
+  }
+}
+
+function renderAll() {
+  renderNavigationCounts();
+  populateFacilityOptions();
+  renderOverview();
+  renderEquipmentTable();
+  renderSubmissions();
+  renderFacilities();
+}
+
+function renderNavigationCounts() {
+  $("#equipment-nav-count").textContent = db.equipment.length;
+  $("#submission-nav-count").textContent = db.equipment.filter(item => item.reviewStatus === "Submitted").length || "";
+}
+
+function renderOverview() {
+  const verified = db.equipment.filter(item => item.reviewStatus === "Verified").length;
+  const pending = db.equipment.filter(item => item.reviewStatus === "Submitted").length;
+  const operational = db.equipment.filter(item => item.status === "Operational").length;
+  const publicReady = db.equipment.filter(item => item.publicReady && item.reviewStatus === "Verified").length;
+  const metrics = [
+    ["Equipment records", db.equipment.length, "total", "+ Registry"],
+    ["Verified records", verified, `${percentage(verified, db.equipment.length)}%`, "Quality"],
+    ["Operational", operational, `${percentage(operational, db.equipment.length)}%`, "Availability"],
+    ["Public-ready", publicReady, "profiles", "Website"]
+  ];
+  $("#metric-grid").innerHTML = metrics.map(([label, value, note, tag]) => `<article class="metric-card"><div class="metric-label"><span>${label}</span><span>${tag}</span></div><div class="metric-value"><strong>${value}</strong><small>${note}</small></div></article>`).join("");
+
+  const maintenance = db.equipment.filter(item => item.status === "Maintenance");
+  const incomplete = db.equipment.filter(item => !item.email || !item.nextMaintenance);
+  const attention = [
+    ["!", `${pending} submission${pending === 1 ? "" : "s"} awaiting review`, "Confirm ownership, access, and safety information.", "", "submissions"],
+    ["↻", `${maintenance.length} instrument${maintenance.length === 1 ? "" : "s"} in maintenance`, maintenance[0]?.name || "No instruments currently marked for maintenance.", "warning", "equipment"],
+    ["i", `${incomplete.length} incomplete record${incomplete.length === 1 ? "" : "s"}`, "Missing contact or maintenance information.", "info", "equipment"]
+  ];
+  $("#attention-list").innerHTML = attention.map(([icon, title, detail, kind, view]) => `<div class="attention-row"><span class="attention-symbol ${kind}">${icon}</span><div><strong>${clean(title)}</strong><p>${clean(detail)}</p></div><button type="button" data-attention-view="${view}" aria-label="Open ${clean(title)}">→</button></div>`).join("");
+
+  const coverage = [
+    ["Verified", percentage(verified, db.equipment.length)],
+    ["Custodian email", percentage(db.equipment.filter(item => item.email).length, db.equipment.length)],
+    ["Maintenance date", percentage(db.equipment.filter(item => item.nextMaintenance).length, db.equipment.length)],
+    ["Public profile", percentage(db.equipment.filter(item => item.publicReady).length, db.equipment.length)]
+  ];
+  $("#coverage-chart").innerHTML = coverage.map(([label, value]) => `<div class="coverage-row"><span>${label}</span><div class="coverage-track"><div class="coverage-fill" style="width:${value}%"></div></div><span>${value}%</span></div>`).join("");
+  $("#data-date").textContent = `Updated ${formatDate(today())}`;
+
+  const recent = [...db.equipment].sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5);
+  $("#recent-table").innerHTML = recent.map(item => `<tr><td>${nameCell(item)}</td><td>${clean(facilityFor(item.facilityId)?.name || "Unassigned")}</td><td>${clean(item.custodian || "Not assigned")}</td><td>${statusPill(item.status)}</td><td>${formatDate(item.updatedAt)}</td></tr>`).join("");
+}
+
+function percentage(value, total) { return total ? Math.round((value / total) * 100) : 0; }
+function researchIcon(item) {
+  const text = `${item.name} ${item.category}`.toLowerCase();
+  const svg = path => `<svg aria-hidden="true" viewBox="0 0 24 24">${path}</svg>`;
+  if (text.includes("confocal") || text.includes("microscop")) return svg(`<circle cx="9" cy="9" r="4"/><path d="m12 12 6 6M15 18h5M5 20h10M13 4l4 4"/>`);
+  if (text.includes("lifetime")) return svg(`<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2M4 12h2M18 12h2"/>`);
+  if (text.includes("coherence") || text.includes("tomography")) return svg(`<path d="M3 12c3-6 6-6 9 0s6 6 9 0M3 17c3-4 6-4 9 0s6 4 9 0"/>`);
+  if (text.includes("infrared") || text.includes("spectro") || text.includes("reflectance")) return svg(`<path d="M3 16c3 0 3-8 6-8s3 8 6 8 3-8 6-8M4 20h16"/>`);
+  if (text.includes("laser")) return svg(`<path d="M3 12h13M16 7v10M19 9l2-2M19 15l2 2M19 12h3"/>`);
+  if (text.includes("electrosp")) return svg(`<path d="M4 6h5l2 6 3-6h6M4 18c4-4 12-4 16 0"/>`);
+  if (text.includes("3d print")) return svg(`<path d="m12 3 8 4-8 4-8-4 8-4Zm-8 4v9l8 5 8-5V7M12 11v10"/>`);
+  if (text.includes("plasmon")) return svg(`<circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><path d="M10 12h4M3 6c6 3 12 3 18 0M3 18c6-3 12-3 18 0"/>`);
+  if (text.includes("quantum")) return svg(`<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(120 12 12)"/>`);
+  if (text.includes("fiber")) return svg(`<path d="M3 6c6 0 6 12 12 12h6M3 12h6c6 0 6-6 12-6"/>`);
+  if (text.includes("chip")) return svg(`<rect x="6" y="6" width="12" height="12"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M18 9h4M2 15h4M18 15h4"/>`);
+  if (text.includes("vein") || text.includes("medical")) return svg(`<path d="M12 20s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6.2-8 11-8 11Z"/><path d="M8 12h2l1-3 2 6 1-3h2"/>`);
+  if (text.includes("data acquisition")) return svg(`<path d="M3 17h4l2-10 4 12 2-7 2 5h4"/>`);
+  if (text.includes("deep learning")) return svg(`<circle cx="5" cy="7" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="9" r="2"/><circle cx="19" cy="15" r="2"/><path d="m7 7 3-2M7 8l3 4M7 16l3-4M7 17l3 2M14 5l3 4M14 12l3-3M14 12l3 3M14 19l3-4"/>`);
+  if (text.includes("vision") || text.includes("imaging")) return svg(`<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>`);
+  return svg(`<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4v16"/>`);
+}
+function nameCell(item) {
+  const media = item.featurePhoto?.data
+    ? `<img src="${item.featurePhoto.data}" alt="" />`
+    : researchIcon(item);
+  return `<div class="equipment-name-cell"><span class="record-icon">${media}</span><div><strong>${clean(item.name)}</strong><small>${clean(item.assetCode || item.id)}${item.sample ? " · SAMPLE" : ""}${item.featurePhoto?.data ? " · PHOTO" : ""}</small></div></div>`;
+}
+function statusPill(status) { return `<span class="status-pill status-${slug(status)}">${clean(status)}</span>`; }
+function reviewPill(status) { return `<span class="review-pill ${slug(status)}">${clean(status)}</span>`; }
+
+function populateFacilityOptions() {
+  const options = db.facilities.map(f => `<option value="${f.id}">${clean(f.name)}</option>`).join("");
+  const filter = $("#facility-filter");
+  const previous = filter.value;
+  filter.innerHTML = `<option value="all">All facilities</option>${options}`;
+  if ([...filter.options].some(option => option.value === previous)) filter.value = previous;
+  $("#record-facility").innerHTML = `<option value="">Select facility</option>${options}`;
+}
+
+function filteredEquipment() {
+  const query = $("#equipment-search").value.trim().toLowerCase();
+  const facility = $("#facility-filter").value;
+  const status = $("#status-filter").value;
+  const review = $("#review-filter").value;
+  return db.equipment.filter(item => {
+    const haystack = [item.name, item.assetCode, item.category, item.custodian, facilityFor(item.facilityId)?.name].join(" ").toLowerCase();
+    return (!query || haystack.includes(query)) && (facility === "all" || item.facilityId === facility) && (status === "all" || item.status === status) && (review === "all" || item.reviewStatus === review);
+  });
+}
+
+function renderEquipmentTable() {
+  const records = filteredEquipment();
+  $("#registry-result-count").textContent = records.length;
+  $("#registry-empty").hidden = records.length > 0;
+  $("#equipment-table").innerHTML = records.map(item => {
+    const facility = facilityFor(item.facilityId);
+    return `<tr data-record-id="${item.id}"><td>${nameCell(item)}</td><td><div class="cell-stack"><strong>${clean(facility?.name || "Unassigned")}</strong><small>${clean(item.room || facility?.room || "No room recorded")}</small></div></td><td><div class="cell-stack"><strong>${clean(item.custodian || "Not assigned")}</strong><small>${clean(item.email || "No email")}</small></div></td><td>${statusPill(item.status)}</td><td>${reviewPill(item.reviewStatus)}</td><td><div class="row-actions"><button type="button" data-edit="${item.id}" aria-label="Edit ${clean(item.name)}">✎</button><button type="button" data-delete="${item.id}" aria-label="Delete ${clean(item.name)}">×</button></div></td></tr>`;
+  }).join("");
+}
+
+function renderSubmissions() {
+  const submitted = db.equipment.filter(item => item.reviewStatus === "Submitted");
+  const drafts = db.equipment.filter(item => item.reviewStatus === "Draft");
+  const verifiedThisMonth = db.equipment.filter(item => item.reviewStatus === "Verified" && item.updatedAt.slice(0,7) === today().slice(0,7));
+  $("#queue-metrics").innerHTML = [[submitted.length,"Awaiting review"],[drafts.length,"Faculty drafts"],[verifiedThisMonth.length,"Verified this month"]].map(([value,label]) => `<div class="queue-stat"><strong>${value}</strong><span>${label}</span></div>`).join("");
+  const list = [...submitted, ...drafts];
+  $("#submission-list").innerHTML = list.length ? list.map(item => {
+    const facility = facilityFor(item.facilityId);
+    return `<article class="submission-card"><div class="submission-card-head"><div><span class="submission-label">${clean(item.reviewStatus)} · ${clean(item.id)}</span><h2>${clean(item.name)}</h2><p>Submitted by ${clean(item.submitterName || "Unidentified contributor")} · ${formatDate(item.updatedAt)}</p></div>${reviewPill(item.reviewStatus)}</div><div class="submission-details"><div><span>Category</span><strong>${clean(item.category || "Not set")}</strong></div><div><span>Facility</span><strong>${clean(facility?.name || "Unassigned")}</strong></div><div><span>Custodian</span><strong>${clean(item.custodian || "Not set")}</strong></div><div><span>Status</span><strong>${clean(item.status)}</strong></div></div><div class="submission-card-foot"><p>${clean(item.submitterNotes || "No reviewer note supplied.")}</p><div class="submission-actions"><button class="button button-secondary" type="button" data-edit="${item.id}">Review & edit</button>${item.reviewStatus === "Submitted" ? `<button class="button button-primary" type="button" data-approve="${item.id}">Approve record</button>` : ""}</div></div></article>`;
+  }).join("") : `<div class="empty-state panel"><span>✓</span><h2>The queue is clear</h2><p>No faculty submissions currently need review.</p></div>`;
+}
+
+function renderFacilities() {
+  const colors = ["#8fd8c8", "#9bc7ee", "#f4c26d", "#c1b2df", "#e8a89a", "#b8d276"];
+  $("#facility-grid").innerHTML = db.facilities.map((facility, index) => {
+    const count = db.equipment.filter(item => item.facilityId === facility.id).length;
+    return `<article class="facility-card"><div class="facility-visual" style="--facility-color:${facility.color || colors[index % colors.length]}"></div><div class="facility-card-meta"><span>${clean(facility.id)}</span><span>${clean(facility.building || "Building not set")} · ${clean(facility.room || "Room not set")}</span></div><h2>${clean(facility.name)}</h2><p>${clean(facility.description || "No facility description has been added.")}</p><div class="facility-card-foot"><span><strong>${count}</strong> equipment record${count === 1 ? "" : "s"}</span><span>Lead<br /><b>${clean(facility.lead || "Not assigned")}</b></span></div></article>`;
+  }).join("");
+}
+
+function openRecordDialog(mode = "manager", id = null) {
+  recordMode = mode;
+  const form = $("#record-form");
+  form.reset();
+  $("#record-id").value = "";
+  const item = id ? db.equipment.find(record => record.id === id) : null;
+  pendingFeaturePhoto = item?.featurePhoto ? clone(item.featurePhoto) : null;
+  pendingGallery = Array.isArray(item?.gallery) ? clone(item.gallery) : [];
+  $("#record-form-kicker").textContent = mode === "faculty" ? "Faculty contribution" : item ? "Edit equipment record" : "New registry record";
+  $("#record-form-title").textContent = mode === "faculty" ? "Submit equipment information" : item ? "Edit equipment" : "Add equipment";
+  $("#record-primary-action").textContent = mode === "faculty" ? "Submit for review" : "Save record";
+  $("#submitter-section").hidden = mode !== "faculty" && !item?.submitterName;
+  if (item) {
+    Object.entries(item).forEach(([key, value]) => {
+      const field = form.elements.namedItem(key);
+      if (!field) return;
+      if (field.type === "checkbox") field.checked = Boolean(value); else field.value = value ?? "";
+    });
+    $("#record-id").value = item.id;
+  }
+  renderMediaPreviews();
+  $("#record-dialog").showModal();
+  setTimeout(() => form.elements.name.focus(), 50);
+}
+
+function recordFromForm(form, saveMode) {
+  const data = Object.fromEntries(new FormData(form).entries());
+  const existing = db.equipment.find(item => item.id === data.id);
+  const numericIds = db.equipment.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
+  const id = existing?.id || `EQ-${String(Math.max(0, ...numericIds) + 1).padStart(3,"0")}`;
+  const reviewStatus = saveMode === "draft" ? "Draft" : recordMode === "faculty" ? "Submitted" : existing?.reviewStatus === "Verified" ? "Verified" : "Verified";
+  if (pendingFeaturePhoto) pendingFeaturePhoto.alt = $("#feature-photo-alt").value.trim();
+  return { ...existing, ...data, id, publicReady: form.elements.publicReady.checked, featurePhoto: pendingFeaturePhoto, gallery: pendingGallery, reviewStatus, createdAt: existing?.createdAt || today(), updatedAt: today(), sample: existing?.sample || false };
+}
+
+function resizeImage(file, maxDimension = 1200, quality = 0.76) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Could not decode image"));
+      image.onload = () => {
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve({ data: canvas.toDataURL("image/jpeg", quality), alt: "", name: file.name });
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderMediaPreviews() {
+  const featurePreview = $("#feature-photo-preview");
+  const altLabel = $("#feature-alt-label");
+  if (pendingFeaturePhoto?.data) {
+    featurePreview.classList.remove("empty");
+    featurePreview.innerHTML = `<img src="${pendingFeaturePhoto.data}" alt="" /><button class="media-remove" type="button" data-remove-feature aria-label="Remove feature photo">×</button>`;
+    altLabel.hidden = false;
+    $("#feature-photo-alt").value = pendingFeaturePhoto.alt || "";
+  } else {
+    featurePreview.classList.add("empty");
+    featurePreview.innerHTML = `<span>No feature photo selected</span>`;
+    altLabel.hidden = true;
+    $("#feature-photo-alt").value = "";
+  }
+  const galleryPreview = $("#gallery-photo-preview");
+  galleryPreview.innerHTML = pendingGallery.length
+    ? pendingGallery.map((photo, index) => `<div class="gallery-item"><img src="${photo.data}" alt="" /><button class="media-remove" type="button" data-remove-gallery="${index}" aria-label="Remove gallery photo ${index + 1}">×</button><input type="text" value="${clean(photo.alt || "")}" data-gallery-alt="${index}" aria-label="Description for gallery photo ${index + 1}" placeholder="Describe this photo" /></div>`).join("")
+    : `<p>No gallery photos selected</p>`;
+}
+
+async function deleteRecord(id) {
+  const item = db.equipment.find(record => record.id === id);
+  if (!item) return;
+  const confirmed = await askConfirm("Delete equipment record?", `“${item.name}” will be removed from this browser database. This cannot be undone.`);
+  if (!confirmed) return;
+  db.equipment = db.equipment.filter(record => record.id !== id);
+  save(); renderAll(); showToast("Equipment record deleted");
+}
+
+function askConfirm(title, message) {
+  return new Promise(resolve => {
+    const dialog = $("#confirm-dialog");
+    $("#confirm-title").textContent = title;
+    $("#confirm-message").textContent = message;
+    const handleClose = () => { dialog.removeEventListener("close", handleClose); resolve(dialog.returnValue === "confirm"); };
+    dialog.addEventListener("close", handleClose);
+    dialog.showModal();
+  });
+}
+
+function downloadFile(filename, type, content) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportCsv() {
+  const fields = ["id","name","assetCode","manufacturer","model","category","facilityId","room","custodian","email","researchGroup","status","access","lastMaintenance","nextMaintenance","safety","publicReady","reviewStatus","updatedAt"];
+  const quote = value => `"${String(value ?? "").replace(/"/g,'""')}"`;
+  const csv = [fields.join(","), ...db.equipment.map(item => fields.map(field => quote(item[field])).join(","))].join("\n");
+  downloadFile(`sut-physics-equipment-${today()}.csv`, "text/csv;charset=utf-8", csv);
+  showToast("CSV export created");
+}
+
+$$('.nav-item').forEach(button => button.addEventListener("click", () => showView(button.dataset.view)));
+$$('[data-view-jump]').forEach(button => button.addEventListener("click", () => showView(button.dataset.viewJump)));
+$$('[data-action="new-record"]').forEach(button => button.addEventListener("click", () => openRecordDialog("manager")));
+$$('[data-action="faculty-submit"]').forEach(button => button.addEventListener("click", () => openRecordDialog("faculty")));
+$$('[data-action="new-facility"]').forEach(button => button.addEventListener("click", () => { $("#facility-form").reset(); $("#facility-dialog").showModal(); }));
+$$('[data-close]').forEach(button => button.addEventListener("click", () => $(`#${button.dataset.close}`).close()));
+
+$("#feature-photo-input").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    pendingFeaturePhoto = await resizeImage(file);
+    pendingFeaturePhoto.alt = `${$("#record-form").elements.name.value || "Research equipment"} feature photo`;
+    renderMediaPreviews();
+  } catch {
+    showToast("The feature photo could not be processed");
+  }
+  event.target.value = "";
+});
+
+$("#gallery-photo-input").addEventListener("change", async event => {
+  const available = Math.max(0, 6 - pendingGallery.length);
+  const files = [...event.target.files].slice(0, available);
+  if (!available) {
+    showToast("The gallery already contains the maximum of 6 photos");
+    event.target.value = "";
+    return;
+  }
+  try {
+    const images = await Promise.all(files.map(resizeImage));
+    const equipmentName = $("#record-form").elements.name.value || "Research equipment";
+    images.forEach((photo, index) => { photo.alt = `${equipmentName} use-case photo ${pendingGallery.length + index + 1}`; });
+    pendingGallery.push(...images);
+    renderMediaPreviews();
+    if (event.target.files.length > available) showToast("Only the first available gallery photos were added");
+  } catch {
+    showToast("One or more gallery photos could not be processed");
+  }
+  event.target.value = "";
+});
+
+$("#feature-photo-preview").addEventListener("click", event => {
+  if (!event.target.closest("[data-remove-feature]")) return;
+  pendingFeaturePhoto = null;
+  renderMediaPreviews();
+});
+
+$("#gallery-photo-preview").addEventListener("click", event => {
+  const button = event.target.closest("[data-remove-gallery]");
+  if (!button) return;
+  pendingGallery.splice(Number(button.dataset.removeGallery), 1);
+  renderMediaPreviews();
+});
+
+$("#gallery-photo-preview").addEventListener("input", event => {
+  const input = event.target.closest("[data-gallery-alt]");
+  if (!input) return;
+  const photo = pendingGallery[Number(input.dataset.galleryAlt)];
+  if (photo) photo.alt = input.value;
+});
+
+$(".mobile-menu").addEventListener("click", event => {
+  const open = $("#sidebar").classList.toggle("is-open");
+  event.currentTarget.setAttribute("aria-expanded", String(open));
+});
+
+$("#record-form").addEventListener("submit", event => {
+  event.preventDefault();
+  const saveMode = event.submitter?.value || "submit";
+  if (!event.currentTarget.reportValidity()) return;
+  const record = recordFromForm(event.currentTarget, saveMode);
+  const index = db.equipment.findIndex(item => item.id === record.id);
+  const previousEquipment = clone(db.equipment);
+  if (index >= 0) db.equipment[index] = record; else db.equipment.unshift(record);
+  if (!save()) {
+    db.equipment = previousEquipment;
+    renderAll();
+    return;
+  }
+  renderAll(); $("#record-dialog").close();
+  showToast(record.reviewStatus === "Submitted" ? "Submitted for registry review" : record.reviewStatus === "Draft" ? "Draft saved" : "Equipment record saved");
+});
+
+$("#facility-form").addEventListener("submit", event => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  const numericIds = db.facilities.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
+  db.facilities.push({ ...data, id: `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}` });
+  save(); renderAll(); $("#facility-dialog").close(); showToast("Facility added to directory");
+});
+
+$("#equipment-table").addEventListener("click", event => {
+  const deleteButton = event.target.closest("[data-delete]");
+  const editButton = event.target.closest("[data-edit]");
+  if (deleteButton) { event.stopPropagation(); deleteRecord(deleteButton.dataset.delete); return; }
+  if (editButton) { event.stopPropagation(); openRecordDialog("manager", editButton.dataset.edit); return; }
+  const row = event.target.closest("[data-record-id]"); if (row) openRecordDialog("manager", row.dataset.recordId);
+});
+
+$("#submission-list").addEventListener("click", event => {
+  const edit = event.target.closest("[data-edit]"); if (edit) openRecordDialog("manager", edit.dataset.edit);
+  const approve = event.target.closest("[data-approve]");
+  if (approve) {
+    const item = db.equipment.find(record => record.id === approve.dataset.approve);
+    if (item) { item.reviewStatus = "Verified"; item.updatedAt = today(); save(); renderAll(); showToast("Submission approved and verified"); }
+  }
+});
+
+$("#attention-list").addEventListener("click", event => { const button = event.target.closest("[data-attention-view]"); if (button) showView(button.dataset.attentionView); });
+
+[$("#equipment-search"), $("#facility-filter"), $("#status-filter"), $("#review-filter")].forEach(control => control.addEventListener(control.tagName === "INPUT" ? "input" : "change", renderEquipmentTable));
+$("#clear-filters").addEventListener("click", () => { $("#equipment-search").value = ""; $("#facility-filter").value = "all"; $("#status-filter").value = "all"; $("#review-filter").value = "all"; renderEquipmentTable(); });
+
+$("#global-search").addEventListener("input", event => { if (event.target.value.trim()) showView("equipment", { query: event.target.value, preserveScroll: true }); });
+document.addEventListener("keydown", event => { if (event.key === "/" && !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)) { event.preventDefault(); $("#global-search").focus(); } });
+
+$("#export-json").addEventListener("click", () => { downloadFile(`sut-physics-registry-${today()}.json`, "application/json", JSON.stringify(db, null, 2)); showToast("JSON backup created"); });
+$("#export-csv").addEventListener("click", exportCsv);
+$("#import-json").addEventListener("change", async event => {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    const imported = JSON.parse(await file.text());
+    if (!Array.isArray(imported.equipment) || !Array.isArray(imported.facilities)) throw new Error("Invalid schema");
+    const confirmed = await askConfirm("Replace the browser database?", `Import ${imported.equipment.length} equipment records and ${imported.facilities.length} facilities from “${file.name}”?`);
+    if (confirmed) { db = imported; save(); renderAll(); showView("overview"); showToast("Registry backup imported"); }
+  } catch { showToast("Could not import: file is not a valid registry backup"); }
+  event.target.value = "";
+});
+
+$("#reset-data").addEventListener("click", async () => {
+  const confirmed = await askConfirm("Reset the prototype database?", "All browser edits will be removed and the original sample records restored.");
+  if (confirmed) { db = clone(sampleDatabase); save(); renderAll(); showView("overview"); showToast("Sample database restored"); }
+});
+
+renderAll();

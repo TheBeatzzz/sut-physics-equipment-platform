@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A prototype infographic page for presenting academic research equipment, facilities, and collaboration pathways."
+    />
+    <title>Research Instruments & Facilities</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <div class="prototype-note" role="note">
+      <span>Prototype</span>
+      Equipment names and figures below are illustrative. Replace them with verified institutional data.
+      <a href="admin.html">Open internal registry <span aria-hidden="true">→</span></a>
+    </div>
+
+    <header class="site-header">
+      <a class="identity" href="#top" aria-label="Research facilities overview">
+        <span class="identity-mark" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span><strong>School of Physics</strong><small>Research Infrastructure</small></span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span>Menu</span><i aria-hidden="true"></i>
+      </button>
+
+      <nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+        <a href="#capabilities">Capabilities</a>
+        <a href="#equipment">Equipment</a>
+        <a href="#access">Access</a>
+        <a class="nav-cta" href="#contact">Start a conversation <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="top" class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span>Research facilities</span><span>Open to discovery</span></p>
+          <h1 id="hero-title">See further.<br /><em>Measure deeper.</em></h1>
+          <p class="hero-intro">
+            Explore the shared instruments, specialist spaces, and technical expertise that move
+            ideas from first observation to reproducible result.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#equipment">Explore the equipment <span aria-hidden="true">↓</span></a>
+            <a class="text-link" href="#access">How facility access works <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+
+        <div class="hero-instrument" aria-label="Abstract illustration showing measurements across physical scales">
+          <div class="scope-label label-a"><span>10<sup>−9</sup> m</span> material</div>
+          <div class="scope-label label-b"><span>10<sup>−3</sup> m</span> device</div>
+          <div class="scope-label label-c"><span>10<sup>3</sup> m</span> environment</div>
+          <div class="scope-ring ring-outer"></div>
+          <div class="scope-ring ring-middle"></div>
+          <div class="scope-ring ring-inner"></div>
+          <div class="crosshair crosshair-x"></div>
+          <div class="crosshair crosshair-y"></div>
+          <div class="scope-core">
+            <span>19</span>
+            <small>example<br />systems</small>
+          </div>
+          <div class="orbit-dot dot-a"></div>
+          <div class="orbit-dot dot-b"></div>
+          <div class="orbit-dot dot-c"></div>
+        </div>
+      </section>
+
+      <section class="signal-strip" aria-label="Illustrative research infrastructure summary">
+        <p class="section-index">01 / Snapshot</p>
+        <div class="signal-grid">
+          <div><strong>19</strong><span>example records</span></div>
+          <div><strong>07</strong><span>facility clusters</span></div>
+          <div><strong>04</strong><span>capability areas</span></div>
+          <p>One connected environment for biomedical photonics, spectroscopy, fabrication, lasers, integrated photonics, quantum technology, and artificial intelligence.</p>
+        </div>
+      </section>
+
+      <section id="capabilities" class="capabilities section-shell" aria-labelledby="capabilities-title">
+        <div class="section-heading">
+          <p class="section-index">02 / Research spectrum</p>
+          <div>
+            <h2 id="capabilities-title">From atomic structure<br />to complex systems.</h2>
+            <p>Our infrastructure supports the full experimental loop: make, observe, measure, and model.</p>
+          </div>
+        </div>
+
+        <div class="spectrum" role="img" aria-label="Four research capabilities arranged from nanometer to system scale">
+          <div class="spectrum-axis"><span>10<sup>−9</sup> m</span><span>Scale of inquiry</span><span>10<sup>3</sup> m</span></div>
+          <article class="spectrum-item spectrum-item-1">
+            <span class="spectrum-number">01</span>
+            <div class="spectrum-glyph glyph-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <h3>Observe</h3><p>Resolve structures and signals beyond ordinary vision.</p>
+          </article>
+          <article class="spectrum-item spectrum-item-2">
+            <span class="spectrum-number">02</span>
+            <div class="spectrum-glyph glyph-layers" aria-hidden="true"><i></i><i></i><i></i></div>
+            <h3>Fabricate</h3><p>Prepare samples and engineer controlled material systems.</p>
+          </article>
+          <article class="spectrum-item spectrum-item-3">
+            <span class="spectrum-number">03</span>
+            <div class="spectrum-glyph glyph-pulse" aria-hidden="true"><i></i></div>
+            <h3>Measure</h3><p>Capture optical, electrical, thermal, and radiation response.</p>
+          </article>
+          <article class="spectrum-item spectrum-item-4">
+            <span class="spectrum-number">04</span>
+            <div class="spectrum-glyph glyph-grid" aria-hidden="true"></div>
+            <h3>Model</h3><p>Connect experimental evidence with computation and theory.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="equipment" class="equipment section-shell" aria-labelledby="equipment-title">
+        <div class="section-heading equipment-heading">
+          <p class="section-index">03 / Equipment atlas</p>
+          <div>
+            <h2 id="equipment-title">Tools for asking<br />better questions.</h2>
+            <p>Filter the sample collection by the part of the research process it supports.</p>
+          </div>
+        </div>
+
+        <div class="filters" role="group" aria-label="Filter equipment by capability">
+          <button type="button" class="filter is-active" data-filter="all" aria-pressed="true">All equipment <span>19</span></button>
+          <button type="button" class="filter" data-filter="observe" aria-pressed="false">Observe <span>05</span></button>
+          <button type="button" class="filter" data-filter="fabricate" aria-pressed="false">Fabricate <span>04</span></button>
+          <button type="button" class="filter" data-filter="measure" aria-pressed="false">Measure <span>07</span></button>
+          <button type="button" class="filter" data-filter="model" aria-pressed="false">Model <span>03</span></button>
+        </div>
+
+        <div id="equipment-grid" class="equipment-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="access" class="access section-shell" aria-labelledby="access-title">
+        <div class="access-intro">
+          <p class="section-index">04 / Facility access</p>
+          <h2 id="access-title">A clear path from<br /><em>question to instrument.</em></h2>
+          <p>
+            Whether you are beginning a student project or planning a cross-disciplinary study,
+            start with the research question. The facility team can help identify the right method.
+          </p>
+        </div>
+
+        <ol class="access-steps">
+          <li><span>01</span><div><h3>Share your question</h3><p>Describe the sample, signal, or phenomenon you need to investigate.</p></div></li>
+          <li><span>02</span><div><h3>Plan the method</h3><p>Discuss feasibility, preparation, training, scheduling, and data needs.</p></div></li>
+          <li><span>03</span><div><h3>Run with support</h3><p>Work safely with an instrument specialist and record a reproducible method.</p></div></li>
+        </ol>
+      </section>
+
+      <section id="contact" class="contact" aria-labelledby="contact-title">
+        <div class="contact-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p class="section-index">05 / Collaborate</p>
+        <div class="contact-copy">
+          <h2 id="contact-title">What could you<br />measure next?</h2>
+          <p>Bring us the question. We’ll help map the route from sample preparation to interpretable data.</p>
+          <a class="button button-light" href="mailto:research@example.edu">Discuss a project <span aria-hidden="true">↗</span></a>
+          <small>Placeholder contact: research@example.edu</small>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="identity identity-footer">
+        <span class="identity-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>School of Physics</strong><small>Research Infrastructure</small></span>
+      </div>
+      <p>Prototype interface · Replace sample content before publication</p>
+      <a href="#top">Back to top <span aria-hidden="true">↑</span></a>
+    </footer>
+  </body>
+</html>
