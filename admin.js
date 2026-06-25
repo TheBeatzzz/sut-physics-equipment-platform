@@ -440,7 +440,7 @@ $("#record-form").addEventListener("submit", event => {
     return;
   }
   renderAll(); $("#record-dialog").close();
-  showToast(record.reviewStatus === "Submitted" ? "Submitted for registry review" : record.reviewStatus === "Draft" ? "Draft saved" : "Equipment record saved");
+  showToast(record.reviewStatus === "Submitted" ? "Submitted for registry review" : record.reviewStatus === "Draft" ? "Draft saved" : record.publicReady ? "Equipment saved and available to the public page" : "Equipment record saved");
 });
 
 $("#facility-form").addEventListener("submit", event => {
@@ -465,7 +465,7 @@ $("#submission-list").addEventListener("click", event => {
   const approve = event.target.closest("[data-approve]");
   if (approve) {
     const item = db.equipment.find(record => record.id === approve.dataset.approve);
-    if (item) { item.reviewStatus = "Verified"; item.updatedAt = today(); save(); renderAll(); showToast("Submission approved and verified"); }
+    if (item) { item.reviewStatus = "Verified"; item.updatedAt = today(); save(); renderAll(); showToast(item.publicReady ? "Submission approved and published to the public page" : "Submission approved and verified"); }
   }
 });
 

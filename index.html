@@ -21,8 +21,8 @@
     <a class="skip-link" href="#main">Skip to main content</a>
 
     <div class="prototype-note" role="note">
-      <span>Prototype</span>
-      Equipment names and figures below are illustrative. Replace them with verified institutional data.
+      <span id="public-data-status">Prototype data</span>
+      <span id="public-data-message">Equipment names and figures below are illustrative. Replace them with verified institutional data.</span>
       <a href="admin.html">Open internal registry <span aria-hidden="true">→</span></a>
     </div>
 
@@ -71,8 +71,8 @@
           <div class="crosshair crosshair-x"></div>
           <div class="crosshair crosshair-y"></div>
           <div class="scope-core">
-            <span>19</span>
-            <small>example<br />systems</small>
+            <span id="hero-equipment-count">19</span>
+            <small id="hero-equipment-label">example<br />systems</small>
           </div>
           <div class="orbit-dot dot-a"></div>
           <div class="orbit-dot dot-b"></div>
@@ -83,9 +83,9 @@
       <section class="signal-strip" aria-label="Illustrative research infrastructure summary">
         <p class="section-index">01 / Snapshot</p>
         <div class="signal-grid">
-          <div><strong>19</strong><span>example records</span></div>
-          <div><strong>07</strong><span>facility clusters</span></div>
-          <div><strong>04</strong><span>capability areas</span></div>
+          <div><strong id="snapshot-equipment-count">19</strong><span id="snapshot-equipment-label">example records</span></div>
+          <div><strong id="snapshot-facility-count">07</strong><span>facility clusters</span></div>
+          <div><strong id="snapshot-capability-count">04</strong><span>capability areas</span></div>
           <p>One connected environment for biomedical photonics, spectroscopy, fabrication, lasers, integrated photonics, quantum technology, and artificial intelligence.</p>
         </div>
       </section>
@@ -134,11 +134,11 @@
         </div>
 
         <div class="filters" role="group" aria-label="Filter equipment by capability">
-          <button type="button" class="filter is-active" data-filter="all" aria-pressed="true">All equipment <span>19</span></button>
-          <button type="button" class="filter" data-filter="observe" aria-pressed="false">Observe <span>05</span></button>
-          <button type="button" class="filter" data-filter="fabricate" aria-pressed="false">Fabricate <span>04</span></button>
-          <button type="button" class="filter" data-filter="measure" aria-pressed="false">Measure <span>07</span></button>
-          <button type="button" class="filter" data-filter="model" aria-pressed="false">Model <span>03</span></button>
+          <button type="button" class="filter is-active" data-filter="all" aria-pressed="true">All equipment <span data-filter-count="all">19</span></button>
+          <button type="button" class="filter" data-filter="observe" aria-pressed="false">Observe <span data-filter-count="observe">05</span></button>
+          <button type="button" class="filter" data-filter="fabricate" aria-pressed="false">Fabricate <span data-filter-count="fabricate">04</span></button>
+          <button type="button" class="filter" data-filter="measure" aria-pressed="false">Measure <span data-filter-count="measure">07</span></button>
+          <button type="button" class="filter" data-filter="model" aria-pressed="false">Model <span data-filter-count="model">03</span></button>
         </div>
 
         <div id="equipment-grid" class="equipment-grid" aria-live="polite"></div>

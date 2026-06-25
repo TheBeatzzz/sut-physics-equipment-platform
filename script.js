@@ -1,4 +1,6 @@
-const equipment = [
+const REGISTRY_STORAGE_KEY = "sut-physics-equipment-registry-v3";
+
+const fallbackEquipment = [
   {
     id: "EQ-01", category: "observe", name: "Photon Counting Scanning Confocal Microscopy",
     description: "Example system for photon-counting confocal imaging and spatially resolved optical investigation.",
@@ -96,6 +98,61 @@ const equipment = [
   }
 ];
 
+const clean = value => String(value ?? "").replace(/[&<>'"]/g, character => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+}[character]));
+
+const publicCategory = item => {
+  const text = `${item.name} ${item.category}`.toLowerCase();
+  if (text.includes("electrosp") || text.includes("3d print") || text.includes("fabricat") || text.includes("photonics on chip") || text.includes("fiber sensor")) return "fabricate";
+  if (text.includes("microscop") || text.includes("tomograph") || text.includes("vein finder") || text.includes("machine vision") || item.category === "Imaging") return "observe";
+  if (item.category === "Computing" || text.includes("deep learning") || text.includes("quantum computing") || text.includes("medical diagnosis")) return "model";
+  return "measure";
+};
+
+const publicVisual = item => {
+  const text = `${item.name} ${item.category}`.toLowerCase();
+  if (text.includes("fabricat") || text.includes("3d print") || text.includes("electrosp") || text.includes("fiber") || text.includes("chip")) return "layers";
+  if (text.includes("comput") || text.includes("learning") || text.includes("quantum") || text.includes("diagnosis")) return "compute";
+  if (text.includes("microscop") || text.includes("tomograph") || text.includes("vision") || text.includes("vein")) return "microscope";
+  if (text.includes("laser") || text.includes("data acquisition")) return "detector";
+  return "spectrum";
+};
+
+const palette = ["#74dfce", "#8fc3ff", "#ff8b5b", "#d7ff3f", "#b59cff", "#ffc95c"];
+let publicFacilities = [];
+let registryAvailable = false;
+
+const loadPublicEquipment = () => {
+  try {
+    const stored = localStorage.getItem(REGISTRY_STORAGE_KEY);
+    if (!stored) return fallbackEquipment;
+    const registry = JSON.parse(stored);
+    if (!Array.isArray(registry.equipment) || !Array.isArray(registry.facilities)) return fallbackEquipment;
+    registryAvailable = true;
+    const visible = registry.equipment.filter(item => item.reviewStatus === "Verified" && item.publicReady === true);
+    publicFacilities = registry.facilities;
+    return visible.map((item, index) => {
+      const facility = registry.facilities.find(candidate => candidate.id === item.facilityId);
+      return {
+        ...item,
+        id: item.id || `EQ-${index + 1}`,
+        category: publicCategory(item),
+        method: item.researchGroup || item.category || "Research system",
+        access: item.access || "Contact facility",
+        color: facility?.color || palette[index % palette.length],
+        visual: publicVisual(item),
+        facilityName: facility?.name || "Physics Program facility",
+        fromRegistry: true
+      };
+    });
+  } catch {
+    return fallbackEquipment;
+  }
+};
+
+let equipment = loadPublicEquipment();
+
 const visualFor = (type, color) => {
   const common = `viewBox="0 0 640 260" role="img" aria-label="Abstract ${type} instrument illustration"`;
   const visuals = {
@@ -133,17 +190,57 @@ const iconFor = name => {
 
 const grid = document.querySelector("#equipment-grid");
 
+const validImage = image => image?.data?.startsWith("data:image/") ? image : null;
+
+const visualMarkup = item => {
+  const feature = validImage(item.featurePhoto);
+  if (!feature) return `<span class="equipment-icon">${iconFor(item.name)}</span>${visualFor(item.visual, item.color)}`;
+  return `<img class="equipment-feature-photo" src="${feature.data}" alt="${clean(feature.alt || `${item.name} equipment`)}" /><span class="equipment-icon">${iconFor(item.name)}</span>`;
+};
+
+const galleryMarkup = item => {
+  const gallery = Array.isArray(item.gallery) ? item.gallery.filter(validImage).slice(0, 4) : [];
+  if (!gallery.length) return "";
+  return `<div class="public-gallery" aria-label="Example use-case gallery">${gallery.map((photo, index) => `<img src="${photo.data}" alt="${clean(photo.alt || `${item.name} gallery image ${index + 1}`)}" />`).join("")}</div>`;
+};
+
+const updatePublicSummary = () => {
+  const registryMode = registryAvailable;
+  const facilityCount = registryMode ? new Set(equipment.map(item => item.facilityId).filter(Boolean)).size : 7;
+  const counts = ["observe", "fabricate", "measure", "model"].reduce((result, category) => {
+    result[category] = equipment.filter(item => item.category === category).length;
+    return result;
+  }, { all: equipment.length });
+
+  document.querySelector("#hero-equipment-count").textContent = String(equipment.length).padStart(2, "0");
+  document.querySelector("#hero-equipment-label").innerHTML = registryMode ? "verified<br />systems" : "example<br />systems";
+  document.querySelector("#snapshot-equipment-count").textContent = String(equipment.length).padStart(2, "0");
+  document.querySelector("#snapshot-equipment-label").textContent = registryMode ? "public records" : "example records";
+  document.querySelector("#snapshot-facility-count").textContent = String(facilityCount).padStart(2, "0");
+  document.querySelector("#snapshot-capability-count").textContent = String(Object.values(counts).slice(1).filter(Boolean).length).padStart(2, "0");
+  Object.entries(counts).forEach(([category, count]) => {
+    const target = document.querySelector(`[data-filter-count="${category}"]`);
+    if (target) target.textContent = String(count).padStart(2, "0");
+  });
+
+  document.querySelector("#public-data-status").textContent = registryMode ? "Live registry" : "Prototype data";
+  document.querySelector("#public-data-message").textContent = registryMode
+    ? "Showing verified equipment approved for the public research profile."
+    : "Equipment names and figures below are illustrative. Replace them with verified institutional data.";
+};
+
 const renderEquipment = (filter = "all") => {
   const filtered = filter === "all" ? equipment : equipment.filter(item => item.category === filter);
-  grid.innerHTML = filtered.map(item => `
+  grid.innerHTML = filtered.length ? filtered.map(item => `
     <article class="equipment-card" data-category="${item.category}">
-      <div class="card-top"><span>${item.id} · Sample</span><span>${item.category}</span></div>
-      <div class="equipment-visual" style="--visual-bg:${item.color}"><span class="equipment-icon">${iconFor(item.name)}</span>${visualFor(item.visual, item.color)}</div>
-      <h3>${item.name}</h3>
-      <p>${item.description}</p>
-      <div class="equipment-meta"><span>${item.method}</span><span>${item.access}</span></div>
+      <div class="card-top"><span>${clean(item.id)} · ${item.fromRegistry ? "Verified" : "Sample"}</span><span>${clean(item.category)}</span></div>
+      <div class="equipment-visual" style="--visual-bg:${item.color}">${visualMarkup(item)}</div>
+      ${galleryMarkup(item)}
+      <h3>${clean(item.name)}</h3>
+      <p>${clean(item.description || "Contact the facility for equipment capabilities and use cases.")}</p>
+      <div class="equipment-meta"><span>${clean(item.method)}</span><span>${clean(item.access)}</span></div>
     </article>
-  `).join("");
+  `).join("") : `<div class="public-empty"><h3>No public records in this category</h3><p>Verify a registry record and mark it as a candidate for the public facility profile.</p></div>`;
 };
 
 document.querySelectorAll(".filter").forEach(button => {
@@ -174,4 +271,13 @@ navigation.addEventListener("click", event => {
   }
 });
 
+window.addEventListener("storage", event => {
+  if (event.key !== REGISTRY_STORAGE_KEY) return;
+  equipment = loadPublicEquipment();
+  updatePublicSummary();
+  const activeFilter = document.querySelector(".filter.is-active")?.dataset.filter || "all";
+  renderEquipment(activeFilter);
+});
+
+updatePublicSummary();
 renderEquipment();
