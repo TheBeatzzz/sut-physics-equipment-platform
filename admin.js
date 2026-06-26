@@ -494,6 +494,16 @@ function askConfirm(title, message) {
   });
 }
 
+function showMagicLinkDialog(email) {
+  const dialog = $("#magic-link-dialog");
+  $("#magic-link-email").textContent = email || "your SUT email";
+  if (dialog?.showModal) {
+    dialog.showModal();
+  } else {
+    window.alert(`Magic link sent to ${email}. Check your email, click the sign-in link, and return to this registry page.`);
+  }
+}
+
 function downloadFile(filename, type, content) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -716,7 +726,8 @@ $("#auth-form").addEventListener("submit", async event => {
   try {
     const session = await backend.signIn(email, password);
     if (!session && !password) {
-      $("#auth-message").textContent = "Magic link sent. Check your email, then return to this page.";
+      $("#auth-message").textContent = `Magic link sent to ${email}. Check your email, then return to this page.`;
+      showMagicLinkDialog(email);
       return;
     }
     currentSession = session || await backend.getSession();
@@ -746,6 +757,10 @@ async function boot() {
     return;
   }
   try {
+    currentSession = await backend.completeAuthFromUrl();
+    if (currentSession) {
+      $("#auth-message").textContent = "Email link confirmed. Loading the shared registry…";
+    }
     currentSession = await backend.getSession();
     if (!currentSession) {
       showAuthGate();

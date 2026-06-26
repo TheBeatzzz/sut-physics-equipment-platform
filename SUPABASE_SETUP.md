@@ -100,3 +100,14 @@ The admin page can see all records after sign-in.
 - anonymous visitors can read only facilities linked to approved public equipment;
 - anonymous visitors cannot edit records;
 - only authenticated, active, pre-approved `@sut.ac.th` users in `registry_admins` can manage records and upload photos.
+
+## Magic-link troubleshooting
+
+If a faculty member receives the email but clicking it returns them to the login screen:
+
+1. Confirm **Authentication → URL Configuration** contains the exact admin page URL they are using.
+2. Confirm their email is active in `public.registry_admins`.
+3. Ask them to open the link in the same browser where they requested it.
+4. Refresh the admin page once after the redirect.
+
+The site explicitly exchanges Supabase's `?code=...` callback for a browser session before loading the registry.

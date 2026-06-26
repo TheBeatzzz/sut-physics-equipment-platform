@@ -214,6 +214,38 @@
     return data.session;
   };
 
+  const clearAuthUrl = () => {
+    const url = new URL(window.location.href);
+    ["code", "state", "error", "error_code", "error_description"].forEach(param => url.searchParams.delete(param));
+    url.hash = "";
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const completeAuthFromUrl = async () => {
+    const supabase = getClient();
+    if (!supabase) return null;
+    const url = new URL(window.location.href);
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+    const authError = url.searchParams.get("error_description") || url.searchParams.get("error") || hash.get("error_description") || hash.get("error");
+    if (authError) {
+      clearAuthUrl();
+      throw new Error(authError);
+    }
+    if (url.searchParams.has("code")) {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+      clearAuthUrl();
+      if (error) throw error;
+      return data.session;
+    }
+    if (hash.has("access_token") || hash.has("refresh_token")) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      const session = await getSession();
+      if (session) clearAuthUrl();
+      return session;
+    }
+    return null;
+  };
+
   const signIn = async (email, password) => {
     const supabase = getClient();
     const requiredDomain = String(config.facultyEmailDomain || "sut.ac.th").toLowerCase();
@@ -246,6 +278,7 @@
     isConfigured,
     getClient,
     getSession,
+    completeAuthFromUrl,
     signIn,
     signOut,
     loadRegistry,

@@ -237,6 +237,24 @@
       <form method="dialog"><span class="confirm-icon">!</span><h2 id="confirm-title">Confirm action</h2><p id="confirm-message"></p><div><button class="button button-quiet" value="cancel">Cancel</button><button class="button button-danger" id="confirm-action" value="confirm">Confirm</button></div></form>
     </dialog>
 
+    <dialog id="magic-link-dialog" class="confirm-dialog magic-link-dialog">
+      <form method="dialog">
+        <span class="confirm-icon success">✓</span>
+        <h2>Check your email</h2>
+        <p>We sent a secure sign-in link to <strong id="magic-link-email">your SUT email</strong>.</p>
+        <ol class="instruction-list">
+          <li>Open the message from Supabase in the same browser you used to request the link.</li>
+          <li>Click the sign-in link before it expires.</li>
+          <li>Return to this registry page; approved faculty will be signed in automatically.</li>
+        </ol>
+        <div class="admin-instruction">
+          <strong>Admin checklist</strong>
+          <span>If the link arrives but returns to login or access is denied, confirm the email is active in the <code>registry_admins</code> table and that Supabase Authentication URL Configuration includes this exact admin page URL.</span>
+        </div>
+        <div><button class="button button-primary" value="confirm">OK, I will check email</button></div>
+      </form>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"><span>✓</span><p></p></div>
   </body>
 </html>
