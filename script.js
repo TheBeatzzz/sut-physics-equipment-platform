@@ -123,35 +123,53 @@ const palette = ["#74dfce", "#8fc3ff", "#ff8b5b", "#d7ff3f", "#b59cff", "#ffc95c
 let publicFacilities = [];
 let registryAvailable = false;
 
-const loadPublicEquipment = () => {
+const mapPublicEquipment = registry => {
+  const visible = registry.equipment.filter(item => item.reviewStatus === "Verified" && item.publicReady === true);
+  publicFacilities = registry.facilities;
+  return visible.map((item, index) => {
+    const facility = registry.facilities.find(candidate => candidate.id === item.facilityId);
+    return {
+      ...item,
+      id: item.id || `EQ-${index + 1}`,
+      category: publicCategory(item),
+      method: item.researchGroup || item.category || "Research system",
+      access: item.access || "Contact facility",
+      color: facility?.color || palette[index % palette.length],
+      visual: publicVisual(item),
+      facilityName: facility?.name || "Physics Program facility",
+      fromRegistry: true
+    };
+  });
+};
+
+const loadLocalPublicEquipment = () => {
   try {
     const stored = localStorage.getItem(REGISTRY_STORAGE_KEY);
     if (!stored) return fallbackEquipment;
     const registry = JSON.parse(stored);
     if (!Array.isArray(registry.equipment) || !Array.isArray(registry.facilities)) return fallbackEquipment;
     registryAvailable = true;
-    const visible = registry.equipment.filter(item => item.reviewStatus === "Verified" && item.publicReady === true);
-    publicFacilities = registry.facilities;
-    return visible.map((item, index) => {
-      const facility = registry.facilities.find(candidate => candidate.id === item.facilityId);
-      return {
-        ...item,
-        id: item.id || `EQ-${index + 1}`,
-        category: publicCategory(item),
-        method: item.researchGroup || item.category || "Research system",
-        access: item.access || "Contact facility",
-        color: facility?.color || palette[index % palette.length],
-        visual: publicVisual(item),
-        facilityName: facility?.name || "Physics Program facility",
-        fromRegistry: true
-      };
-    });
+    return mapPublicEquipment(registry);
   } catch {
     return fallbackEquipment;
   }
 };
 
-let equipment = loadPublicEquipment();
+const loadPublicEquipment = async () => {
+  registryAvailable = false;
+  if (window.SUTSupabase?.isConfigured?.()) {
+    try {
+      const registry = await window.SUTSupabase.loadRegistry({ publicOnly: true });
+      registryAvailable = true;
+      return mapPublicEquipment(registry);
+    } catch (error) {
+      console.warn("Supabase public registry unavailable; using local/prototype data.", error);
+    }
+  }
+  return loadLocalPublicEquipment();
+};
+
+let equipment = [];
 
 const visualFor = (type, color) => {
   const common = `viewBox="0 0 640 260" role="img" aria-label="Abstract ${type} instrument illustration"`;
@@ -190,18 +208,19 @@ const iconFor = name => {
 
 const grid = document.querySelector("#equipment-grid");
 
-const validImage = image => image?.data?.startsWith("data:image/") ? image : null;
+const imageSource = image => window.SUTSupabase?.photoSrc?.(image) || image?.url || image?.data || "";
+const validImage = image => imageSource(image).startsWith("data:image/") || /^https?:\/\//.test(imageSource(image)) ? image : null;
 
 const visualMarkup = item => {
   const feature = validImage(item.featurePhoto);
   if (!feature) return `<span class="equipment-icon">${iconFor(item.name)}</span>${visualFor(item.visual, item.color)}`;
-  return `<img class="equipment-feature-photo" src="${feature.data}" alt="${clean(feature.alt || `${item.name} equipment`)}" /><span class="equipment-icon">${iconFor(item.name)}</span>`;
+  return `<img class="equipment-feature-photo" src="${imageSource(feature)}" alt="${clean(feature.alt || `${item.name} equipment`)}" /><span class="equipment-icon">${iconFor(item.name)}</span>`;
 };
 
 const galleryMarkup = item => {
   const gallery = Array.isArray(item.gallery) ? item.gallery.filter(validImage).slice(0, 5) : [];
   if (!gallery.length) return `<div class="public-gallery is-empty" aria-hidden="true"></div>`;
-  return `<div class="public-gallery" aria-label="Example use-case gallery">${gallery.map((photo, index) => `<img src="${photo.data}" alt="${clean(photo.alt || `${item.name} gallery image ${index + 1}`)}" />`).join("")}</div>`;
+  return `<div class="public-gallery" aria-label="Example use-case gallery">${gallery.map((photo, index) => `<img src="${imageSource(photo)}" alt="${clean(photo.alt || `${item.name} gallery image ${index + 1}`)}" />`).join("")}</div>`;
 };
 
 const updatePublicSummary = () => {
@@ -324,18 +343,21 @@ navigation.addEventListener("click", event => {
   }
 });
 
-window.addEventListener("storage", event => {
+window.addEventListener("storage", async event => {
   if (event.key !== REGISTRY_STORAGE_KEY) return;
-  equipment = loadPublicEquipment();
+  equipment = await loadPublicEquipment();
   updatePublicSummary();
   const activeFilter = document.querySelector(".filter.is-active")?.dataset.filter || "all";
   renderEquipment(activeFilter);
   populateInquiryEquipment();
 });
 
-updatePublicSummary();
-renderEquipment();
-populateInquiryEquipment();
+async function bootPublicPage() {
+  equipment = await loadPublicEquipment();
+  updatePublicSummary();
+  renderEquipment();
+  populateInquiryEquipment();
+}
 
 document.querySelector("#open-inquiry").addEventListener("click", openInquiry);
 document.querySelector("#close-inquiry").addEventListener("click", () => inquiryDialog.close());
@@ -369,3 +391,5 @@ inquiryForm.addEventListener("submit", event => {
   ].filter((line, index, lines) => line || (index > 0 && lines[index - 1])).join("\n");
   window.location.href = `mailto:${item.email.trim()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 });
+
+bootPublicPage();

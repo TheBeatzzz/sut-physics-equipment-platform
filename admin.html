@@ -9,10 +9,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="admin.css" />
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
     <script src="admin.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#workspace">Skip to workspace</a>
+
+    <section id="auth-gate" class="auth-gate" hidden aria-labelledby="auth-title">
+      <div class="auth-card">
+        <p class="eyebrow">Faculty-only registry</p>
+        <h1 id="auth-title">Sign in to manage shared equipment records.</h1>
+        <p>The public webpage can read only approved records. Editing, uploading photos, and reviewing faculty submissions require a pre-approved SUT faculty account.</p>
+        <form id="auth-form" class="auth-form">
+          <label>SUT email<input id="auth-email" type="email" autocomplete="email" placeholder="name@sut.ac.th" required /></label>
+          <label>Password <span>Optional for magic link</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="Leave blank to send a magic link" /></label>
+          <button class="button button-primary" id="auth-submit" type="submit">Sign in</button>
+        </form>
+        <p class="auth-help" id="auth-message">Use a password if your Supabase account has one, or leave it blank to request an email magic link. Your email must be on the approved faculty list.</p>
+      </div>
+    </section>
 
     <aside class="sidebar" id="sidebar">
       <div class="brand">
@@ -46,7 +63,7 @@
       </nav>
 
       <div class="sidebar-foot">
-        <div class="storage-state"><span></span><div><strong>Prototype storage</strong><small>Saved in this browser only</small></div></div>
+        <div class="storage-state" id="storage-state"><span></span><div><strong>Prototype storage</strong><small>Saved in this browser only</small></div></div>
         <a href="index.html">View public infographic <span aria-hidden="true">↗</span></a>
       </div>
     </aside>
@@ -66,7 +83,8 @@
             <kbd>/</kbd>
           </label>
           <button class="button button-primary" type="button" data-action="new-record"><span aria-hidden="true">＋</span> Add equipment</button>
-          <div class="user-chip" title="Prototype user"><span>PM</span><div><strong>Program manager</strong><small>Registry editor</small></div></div>
+          <div class="user-chip" id="user-chip" title="Current registry user"><span>PM</span><div><strong>Program manager</strong><small>Registry editor</small></div></div>
+          <button class="button button-secondary" id="sign-out" type="button" hidden>Sign out</button>
         </div>
       </header>
 
@@ -74,7 +92,7 @@
         <section class="view is-visible" data-view-panel="overview" aria-labelledby="overview-title">
           <div class="view-heading">
             <div><p class="eyebrow">Registry overview</p><h1 id="overview-title">Research infrastructure,<br /><em>in one clear view.</em></h1></div>
-            <div class="heading-note"><span class="live-dot"></span><p><strong>Prototype dataset</strong><br />Sample records are marked and must be replaced with verified program data.</p></div>
+            <div class="heading-note"><span class="live-dot"></span><p><strong id="registry-mode-title">Prototype dataset</strong><br /><span id="registry-mode-note">Sample records are marked and must be replaced with verified program data.</span></p></div>
           </div>
 
           <div class="metric-grid" id="metric-grid"></div>
@@ -139,10 +157,11 @@
           <div class="data-grid">
             <section class="panel data-card"><span class="data-icon">{ }</span><h2>Export full registry</h2><p>Download equipment, facilities, and metadata as structured JSON.</p><button class="button button-secondary" type="button" id="export-json">Download JSON <span>↓</span></button></section>
             <section class="panel data-card"><span class="data-icon">CSV</span><h2>Export equipment table</h2><p>Download a spreadsheet-ready CSV for checking and reporting.</p><button class="button button-secondary" type="button" id="export-csv">Download CSV <span>↓</span></button></section>
-            <section class="panel data-card"><span class="data-icon">↥</span><h2>Import a backup</h2><p>Restore a JSON file created by this prototype. Existing browser data will be replaced.</p><label class="button button-secondary file-button">Choose JSON <input type="file" id="import-json" accept="application/json,.json" /></label></section>
+            <section class="panel data-card"><span class="data-icon">↥</span><h2>Import a backup</h2><p>Restore a JSON file created by this platform. In Supabase mode, imported records are uploaded into the shared database.</p><label class="button button-secondary file-button">Choose JSON <input type="file" id="import-json" accept="application/json,.json" /></label></section>
+            <section class="panel data-card"><span class="data-icon">19</span><h2>Seed example records</h2><p>Add the example Physics equipment and facility clusters to the active registry. Existing IDs are updated.</p><button class="button button-secondary" type="button" id="seed-sample-data">Seed examples</button></section>
           </div>
-          <section class="production-note"><div class="production-visual" aria-hidden="true"><i></i><i></i><i></i></div><div><p class="panel-kicker">Before production use</p><h2>Connect identity, database, and file storage.</h2><p>This prototype stores data only in the current browser. A deployed internal system should use SUT authentication, role-based permissions, a managed database, secure image/document storage, audit history, backups, and institutional privacy review.</p><ul><li>Single sign-on and user roles</li><li>PostgreSQL or equivalent managed database</li><li>Change history and approval audit log</li><li>Secure media uploads and scheduled backups</li></ul></div></section>
-          <section class="danger-zone panel"><div><p class="panel-kicker">Prototype controls</p><h2>Reset sample database</h2><p>Remove browser edits and restore the original sample records.</p></div><button class="button button-danger" id="reset-data" type="button">Reset sample data</button></section>
+          <section class="production-note"><div class="production-visual" aria-hidden="true"><i></i><i></i><i></i></div><div><p class="panel-kicker">Supabase backend</p><h2>Shared database, login, and managed image storage.</h2><p>When Supabase is configured, faculty sign in before managing records. The public page reads only verified public-ready equipment through database policies, while feature photos and galleries are stored in the equipment photo bucket.</p><ul><li>Faculty authentication</li><li>PostgreSQL equipment and facility tables</li><li>Public read policy for approved records only</li><li>Photo uploads through Supabase Storage</li></ul></div></section>
+          <section class="danger-zone panel"><div><p class="panel-kicker">Data controls</p><h2>Reset sample database</h2><p>In prototype mode, remove browser edits and restore the original sample records. In Supabase mode, use import/export for shared data management.</p></div><button class="button button-danger" id="reset-data" type="button">Reset sample data</button></section>
         </section>
       </main>
     </div>
@@ -189,7 +208,7 @@
               <div class="media-field-head"><div><strong>Use-case gallery</strong><small>Up to 5 photos. Gallery images are stored at a smaller web-ready size.</small></div><label class="media-upload">Add photos<input id="gallery-photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label></div>
               <div id="gallery-photo-preview" class="gallery-photo-preview"><p>No gallery photos selected</p></div>
             </div>
-            <p class="storage-warning"><strong>Prototype note:</strong> photos are saved only in this browser. Production use should upload them to secure institutional file storage.</p>
+            <p class="storage-warning" id="media-storage-note"><strong>Prototype note:</strong> photos are saved only in this browser. Configure Supabase to upload them to shared equipment storage.</p>
           </div></div>
           <div class="form-section submitter-section" id="submitter-section"><div class="form-section-title"><span>05</span><div><h3>Faculty submitter</h3><p>Identify who provided this information for follow-up.</p></div></div><div class="form-grid">
             <label>Your name <span aria-hidden="true">*</span><input name="submitterName" placeholder="Faculty member name" /></label>

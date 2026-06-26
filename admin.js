@@ -75,6 +75,10 @@ const loadDatabase = () => {
 };
 
 let db = loadDatabase();
+const backend = window.SUTSupabase;
+const backendConfigured = Boolean(backend?.isConfigured?.());
+let backendReady = false;
+let currentSession = null;
 let activeView = "overview";
 let recordMode = "manager";
 let toastTimer;
@@ -88,6 +92,7 @@ const clean = value => String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "
 const slug = value => String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const facilityFor = id => db.facilities.find(item => item.id === id);
 const formatDate = value => value ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "Not recorded";
+const photoSrc = photo => backend?.photoSrc?.(photo) || photo?.url || photo?.data || "";
 const save = () => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
@@ -97,6 +102,123 @@ const save = () => {
     return false;
   }
 };
+
+function setBusy(button, busy, label = "Saving…") {
+  if (!button) return;
+  if (busy) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = label;
+    button.disabled = true;
+  } else {
+    button.textContent = button.dataset.originalText || button.textContent;
+    button.disabled = false;
+  }
+}
+
+function setRegistryMode(message = "") {
+  const state = $("#storage-state");
+  if (!state) return;
+  const title = state.querySelector("strong");
+  const detail = state.querySelector("small");
+  if (backendConfigured) {
+    title.textContent = backendReady ? "Supabase registry" : "Supabase login";
+    detail.textContent = message || (backendReady ? "Shared database active" : "Sign in required");
+    $("#registry-mode-title").textContent = backendReady ? "Live shared registry" : "Faculty login required";
+    $("#registry-mode-note").textContent = backendReady ? "Records are loaded from Supabase and shared across approved faculty accounts." : "Sign in with a pre-approved SUT faculty account to manage equipment data.";
+    $("#media-storage-note").innerHTML = "<strong>Supabase storage:</strong> photos upload to the shared equipment-photos bucket. The public page can display photos for approved equipment.";
+    $("#sign-out").hidden = !backendReady;
+    $("#reset-data").disabled = backendReady;
+  } else {
+    title.textContent = "Prototype storage";
+    detail.textContent = "Saved in this browser only";
+    $("#registry-mode-title").textContent = "Prototype dataset";
+    $("#registry-mode-note").textContent = "Sample records are marked and must be replaced with verified program data.";
+    $("#media-storage-note").innerHTML = "<strong>Prototype note:</strong> photos are saved only in this browser. Configure Supabase to upload them to shared equipment storage.";
+    $("#sign-out").hidden = true;
+    $("#reset-data").disabled = false;
+  }
+}
+
+function setUserChip() {
+  const email = currentSession?.user?.email || "";
+  const initials = email ? email.slice(0, 2).toUpperCase() : "PM";
+  $("#user-chip").querySelector("span").textContent = initials;
+  $("#user-chip").querySelector("strong").textContent = email || "Program manager";
+  $("#user-chip").querySelector("small").textContent = backendReady ? "Supabase editor" : "Registry editor";
+}
+
+function showAuthGate(message = "") {
+  $("#auth-gate").hidden = false;
+  document.body.classList.add("auth-required");
+  $("#auth-message").textContent = message || "Sign in with a pre-approved SUT faculty account to manage the shared registry.";
+  db = { ...clone(sampleDatabase), equipment: [], facilities: [] };
+  backendReady = false;
+  currentSession = null;
+  setRegistryMode();
+  setUserChip();
+  renderAll();
+}
+
+function hideAuthGate() {
+  $("#auth-gate").hidden = true;
+  document.body.classList.remove("auth-required");
+}
+
+async function loadSharedRegistry() {
+  if (!backendConfigured) return false;
+  try {
+    db = await backend.loadRegistry({ publicOnly: false });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    backendReady = true;
+    setRegistryMode();
+    setUserChip();
+    hideAuthGate();
+    renderAll();
+    return true;
+  } catch (error) {
+    showAuthGate(`${error.message || "Could not load the shared registry."} If you are signed in, confirm that your @sut.ac.th email is active in the registry_admins allowlist.`);
+    return false;
+  }
+}
+
+async function persistEquipment(record, previousEquipment) {
+  if (!backendReady) {
+    if (save()) return true;
+    db.equipment = previousEquipment;
+    renderAll();
+    return false;
+  }
+  try {
+    const savedRecord = await backend.saveEquipment(record);
+    const index = db.equipment.findIndex(item => item.id === savedRecord.id);
+    if (index >= 0) db.equipment[index] = savedRecord; else db.equipment.unshift(savedRecord);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    return true;
+  } catch (error) {
+    db.equipment = previousEquipment;
+    renderAll();
+    showToast(error.message || "Could not save to Supabase");
+    return false;
+  }
+}
+
+async function persistFacility(facility) {
+  if (!backendReady) {
+    db.facilities.push(facility);
+    save();
+    return true;
+  }
+  try {
+    const savedFacility = await backend.saveFacility(facility);
+    const index = db.facilities.findIndex(item => item.id === savedFacility.id);
+    if (index >= 0) db.facilities[index] = savedFacility; else db.facilities.push(savedFacility);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    return true;
+  } catch (error) {
+    showToast(error.message || "Could not save facility to Supabase");
+    return false;
+  }
+}
 
 function showToast(message) {
   clearTimeout(toastTimer);
@@ -191,10 +313,10 @@ function researchIcon(item) {
   return svg(`<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4v16"/>`);
 }
 function nameCell(item) {
-  const media = item.featurePhoto?.data
-    ? `<img src="${item.featurePhoto.data}" alt="" />`
+  const media = photoSrc(item.featurePhoto)
+    ? `<img src="${photoSrc(item.featurePhoto)}" alt="" />`
     : researchIcon(item);
-  return `<div class="equipment-name-cell"><span class="record-icon">${media}</span><div><strong>${clean(item.name)}</strong><small>${clean(item.assetCode || item.id)}${item.sample ? " · SAMPLE" : ""}${item.featurePhoto?.data ? " · PHOTO" : ""}</small></div></div>`;
+  return `<div class="equipment-name-cell"><span class="record-icon">${media}</span><div><strong>${clean(item.name)}</strong><small>${clean(item.assetCode || item.id)}${item.sample ? " · SAMPLE" : ""}${photoSrc(item.featurePhoto) ? " · PHOTO" : ""}</small></div></div>`;
 }
 function statusPill(status) { return `<span class="status-pill status-${slug(status)}">${clean(status)}</span>`; }
 function reviewPill(status) { return `<span class="review-pill ${slug(status)}">${clean(status)}</span>`; }
@@ -321,9 +443,9 @@ function resizeImage(file, maxDimension = 1200, quality = 0.76) {
 function renderMediaPreviews() {
   const featurePreview = $("#feature-photo-preview");
   const altLabel = $("#feature-alt-label");
-  if (pendingFeaturePhoto?.data) {
+  if (photoSrc(pendingFeaturePhoto)) {
     featurePreview.classList.remove("empty");
-    featurePreview.innerHTML = `<img src="${pendingFeaturePhoto.data}" alt="" /><button class="media-remove" type="button" data-remove-feature aria-label="Remove feature photo">×</button>`;
+    featurePreview.innerHTML = `<img src="${photoSrc(pendingFeaturePhoto)}" alt="" /><button class="media-remove" type="button" data-remove-feature aria-label="Remove feature photo">×</button>`;
     altLabel.hidden = false;
     $("#feature-photo-alt").value = pendingFeaturePhoto.alt || "";
   } else {
@@ -334,17 +456,31 @@ function renderMediaPreviews() {
   }
   const galleryPreview = $("#gallery-photo-preview");
   galleryPreview.innerHTML = pendingGallery.length
-    ? pendingGallery.map((photo, index) => `<div class="gallery-item"><img src="${photo.data}" alt="" /><button class="media-remove" type="button" data-remove-gallery="${index}" aria-label="Remove gallery photo ${index + 1}">×</button><input type="text" value="${clean(photo.alt || "")}" data-gallery-alt="${index}" aria-label="Description for gallery photo ${index + 1}" placeholder="Describe this photo" /></div>`).join("")
+    ? pendingGallery.map((photo, index) => `<div class="gallery-item"><img src="${photoSrc(photo)}" alt="" /><button class="media-remove" type="button" data-remove-gallery="${index}" aria-label="Remove gallery photo ${index + 1}">×</button><input type="text" value="${clean(photo.alt || "")}" data-gallery-alt="${index}" aria-label="Description for gallery photo ${index + 1}" placeholder="Describe this photo" /></div>`).join("")
     : `<p>No gallery photos selected</p>`;
 }
 
 async function deleteRecord(id) {
   const item = db.equipment.find(record => record.id === id);
   if (!item) return;
-  const confirmed = await askConfirm("Delete equipment record?", `“${item.name}” will be removed from this browser database. This cannot be undone.`);
+  const confirmed = await askConfirm("Delete equipment record?", `“${item.name}” will be removed from ${backendReady ? "the shared Supabase registry" : "this browser database"}. This cannot be undone.`);
   if (!confirmed) return;
+  const previousEquipment = clone(db.equipment);
   db.equipment = db.equipment.filter(record => record.id !== id);
-  save(); renderAll(); showToast("Equipment record deleted");
+  if (backendReady) {
+    try {
+      await backend.deleteEquipment(id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    } catch (error) {
+      db.equipment = previousEquipment;
+      renderAll();
+      showToast(error.message || "Could not delete from Supabase");
+      return;
+    }
+  } else {
+    save();
+  }
+  renderAll(); showToast("Equipment record deleted");
 }
 
 function askConfirm(title, message) {
@@ -447,30 +583,35 @@ $(".mobile-menu").addEventListener("click", event => {
   event.currentTarget.setAttribute("aria-expanded", String(open));
 });
 
-$("#record-form").addEventListener("submit", event => {
+$("#record-form").addEventListener("submit", async event => {
   event.preventDefault();
   const saveMode = event.submitter?.value || "submit";
   if (!event.currentTarget.reportValidity()) return;
+  setBusy(event.submitter, true, backendReady ? "Uploading…" : "Saving…");
   const record = recordFromForm(event.currentTarget, saveMode);
   const index = db.equipment.findIndex(item => item.id === record.id);
   const previousEquipment = clone(db.equipment);
   if (index >= 0) db.equipment[index] = record; else db.equipment.unshift(record);
-  if (!save()) {
-    db.equipment = previousEquipment;
-    renderAll();
+  if (!(await persistEquipment(record, previousEquipment))) {
+    setBusy(event.submitter, false);
     return;
   }
+  setBusy(event.submitter, false);
   renderAll(); $("#record-dialog").close();
   showToast(record.reviewStatus === "Submitted" ? "Submitted for registry review" : record.reviewStatus === "Draft" ? "Draft saved" : record.publicReady ? "Equipment saved and available to the public page" : "Equipment record saved");
 });
 
-$("#facility-form").addEventListener("submit", event => {
+$("#facility-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
+  setBusy(event.submitter, true);
   const data = Object.fromEntries(new FormData(event.currentTarget).entries());
   const numericIds = db.facilities.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
-  db.facilities.push({ ...data, id: `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}` });
-  save(); renderAll(); $("#facility-dialog").close(); showToast("Facility added to directory");
+  const facility = { ...data, id: `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}` };
+  if (await persistFacility(facility)) {
+    renderAll(); $("#facility-dialog").close(); showToast("Facility added to directory");
+  }
+  setBusy(event.submitter, false);
 });
 
 $("#equipment-table").addEventListener("click", event => {
@@ -481,12 +622,22 @@ $("#equipment-table").addEventListener("click", event => {
   const row = event.target.closest("[data-record-id]"); if (row) openRecordDialog("manager", row.dataset.recordId);
 });
 
-$("#submission-list").addEventListener("click", event => {
+$("#submission-list").addEventListener("click", async event => {
   const edit = event.target.closest("[data-edit]"); if (edit) openRecordDialog("manager", edit.dataset.edit);
   const approve = event.target.closest("[data-approve]");
   if (approve) {
     const item = db.equipment.find(record => record.id === approve.dataset.approve);
-    if (item) { item.reviewStatus = "Verified"; item.updatedAt = today(); save(); renderAll(); showToast(item.publicReady ? "Submission approved and published to the public page" : "Submission approved and verified"); }
+    if (item) {
+      const previousEquipment = clone(db.equipment);
+      item.reviewStatus = "Verified";
+      item.updatedAt = today();
+      setBusy(approve, true, "Approving…");
+      if (await persistEquipment(item, previousEquipment)) {
+        renderAll();
+        showToast(item.publicReady ? "Submission approved and published to the public page" : "Submission approved and verified");
+      }
+      setBusy(approve, false);
+    }
   }
 });
 
@@ -509,15 +660,101 @@ $("#import-json").addEventListener("change", async event => {
       ...item,
       description: String(item.description || "").slice(0, DESCRIPTION_LIMIT)
     }));
-    const confirmed = await askConfirm("Replace the browser database?", `Import ${imported.equipment.length} equipment records and ${imported.facilities.length} facilities from “${file.name}”?`);
-    if (confirmed) { db = imported; save(); renderAll(); showView("overview"); showToast("Registry backup imported"); }
+    const confirmed = await askConfirm(backendReady ? "Import into the shared registry?" : "Replace the browser database?", `Import ${imported.equipment.length} equipment records and ${imported.facilities.length} facilities from “${file.name}”?`);
+    if (confirmed) {
+      if (backendReady) {
+        for (const facility of imported.facilities) await backend.saveFacility(facility);
+        for (const record of imported.equipment) await backend.saveEquipment(record);
+        await loadSharedRegistry();
+      } else {
+        db = imported; save(); renderAll();
+      }
+      showView("overview"); showToast("Registry backup imported");
+    }
   } catch { showToast("Could not import: file is not a valid registry backup"); }
   event.target.value = "";
 });
 
+$("#seed-sample-data").addEventListener("click", async event => {
+  const confirmed = await askConfirm("Seed example records?", `Add or update ${sampleDatabase.equipment.length} example equipment records and ${sampleDatabase.facilities.length} facilities in ${backendReady ? "Supabase" : "this browser"}?`);
+  if (!confirmed) return;
+  setBusy(event.currentTarget, true, "Seeding…");
+  try {
+    if (backendReady) {
+      for (const facility of sampleDatabase.facilities) await backend.saveFacility(facility);
+      for (const record of sampleDatabase.equipment) await backend.saveEquipment(record);
+      await loadSharedRegistry();
+    } else {
+      db = clone(sampleDatabase);
+      save();
+      renderAll();
+    }
+    showView("overview");
+    showToast("Example registry records seeded");
+  } catch (error) {
+    showToast(error.message || "Could not seed example records");
+  } finally {
+    setBusy(event.currentTarget, false);
+  }
+});
+
 $("#reset-data").addEventListener("click", async () => {
+  if (backendReady) {
+    showToast("Sample reset is disabled while Supabase is active");
+    return;
+  }
   const confirmed = await askConfirm("Reset the prototype database?", "All browser edits will be removed and the original sample records restored.");
   if (confirmed) { db = clone(sampleDatabase); save(); renderAll(); showView("overview"); showToast("Sample database restored"); }
 });
 
-renderAll();
+$("#auth-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!backendConfigured) return;
+  const email = $("#auth-email").value.trim();
+  const password = $("#auth-password").value;
+  setBusy($("#auth-submit"), true, password ? "Signing in…" : "Sending link…");
+  try {
+    const session = await backend.signIn(email, password);
+    if (!session && !password) {
+      $("#auth-message").textContent = "Magic link sent. Check your email, then return to this page.";
+      return;
+    }
+    currentSession = session || await backend.getSession();
+    await loadSharedRegistry();
+    showToast("Signed in to shared registry");
+  } catch (error) {
+    $("#auth-message").textContent = error.message || "Could not sign in. Check your account and Supabase settings.";
+  } finally {
+    setBusy($("#auth-submit"), false);
+  }
+});
+
+$("#sign-out").addEventListener("click", async () => {
+  try {
+    await backend.signOut();
+    showAuthGate("Signed out. Sign in again to manage the shared registry.");
+  } catch (error) {
+    showToast(error.message || "Could not sign out");
+  }
+});
+
+async function boot() {
+  setRegistryMode();
+  setUserChip();
+  if (!backendConfigured) {
+    renderAll();
+    return;
+  }
+  try {
+    currentSession = await backend.getSession();
+    if (!currentSession) {
+      showAuthGate();
+      return;
+    }
+    await loadSharedRegistry();
+  } catch (error) {
+    showAuthGate(error.message || "Could not connect to Supabase.");
+  }
+}
+
+boot();
