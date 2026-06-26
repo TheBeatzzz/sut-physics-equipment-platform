@@ -40,6 +40,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .auth-form label { display: grid; gap: 6px; color: var(--ink-2); font-size: 12px; font-weight: 700; }
 .auth-form label span { color: var(--muted); font-weight: 500; }
 .auth-form input { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); background: var(--paper); }
+.magic-link-panel { margin-top: 18px; padding: 16px 18px; color: #176244; background: #e0efe6; border: 1px solid #b7d8c5; font-size: 12px; line-height: 1.55; }
+.magic-link-panel strong { display: block; margin-bottom: 4px; color: var(--green); font-size: 13px; }
+.magic-link-panel ol { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+.magic-link-panel code { padding: 1px 4px; background: rgba(255,255,255,.65); font: 11px var(--mono); }
 .auth-help { margin-top: 14px !important; font-size: 11px !important; }
 
 .sidebar { position: fixed; z-index: 50; inset: 0 auto 0 0; width: var(--sidebar); display: flex; flex-direction: column; color: #eff4f0; background: var(--green); }

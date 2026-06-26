@@ -25,8 +25,17 @@
         <form id="auth-form" class="auth-form">
           <label>SUT email<input id="auth-email" type="email" autocomplete="email" placeholder="name@sut.ac.th" required /></label>
           <label>Password <span>Optional for magic link</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="Leave blank to send a magic link" /></label>
-          <button class="button button-primary" id="auth-submit" type="submit">Sign in</button>
+          <button class="button button-primary" id="auth-submit" type="submit">Sign in / send magic link</button>
         </form>
+        <div id="magic-link-panel" class="magic-link-panel" hidden>
+          <strong>Magic link requested</strong>
+          <span id="magic-link-panel-message">Check your SUT email for a secure sign-in link.</span>
+          <ol>
+            <li>Open the message from Supabase.</li>
+            <li>Click the sign-in link in the same browser.</li>
+            <li>If access is denied, ask the registry admin to confirm your email is active in <code>registry_admins</code>.</li>
+          </ol>
+        </div>
         <p class="auth-help" id="auth-message">Use a password if your Supabase account has one, or leave it blank to request an email magic link. Your email must be on the approved faculty list.</p>
       </div>
     </section>
