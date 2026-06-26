@@ -4,7 +4,7 @@
 // The anon key is intentionally public; database and storage access are protected
 // by Row Level Security policies from `supabase-schema.sql`.
 window.SUT_SUPABASE_CONFIG = {
-  url: "https://itktdigyajdzmrbnlxxs.supabase.co/rest/v1/",
+  url: "https://itktdigyajdzmrbnlxxs.supabase.co",
   anonKey: "sb_publishable_Uvvv05e4bb1ito4DvFWV4Q_11xTz7Ic",
   photoBucket: "equipment-photos",
   facultyEmailDomain: "sut.ac.th"

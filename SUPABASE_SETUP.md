@@ -65,8 +65,10 @@ anonKey: "YOUR-SUPABASE-ANON-KEY",
 
 Use values from **Project Settings → API**:
 
-- Project URL
+- Project URL, for example `https://your-project-ref.supabase.co`
 - anon public key
+
+Use the base Project URL only. Do not paste the REST endpoint ending in `/rest/v1/`.
 
 Do not put the service-role key in this website.
 
