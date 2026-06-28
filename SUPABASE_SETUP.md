@@ -21,7 +21,7 @@ The SQL creates:
 
 By default, edit access is limited to authenticated users who are both:
 
-- using an email ending with `@sut.ac.th`;
+- using an email ending with `@sut.ac.th` or `@g.sut.ac.th`;
 - listed as active in `registry_admins`.
 
 ## 2. Configure authentication
@@ -52,9 +52,26 @@ on conflict (email) do update set
 
 Add one row per approved faculty member. Only active emails in this table can manage equipment records.
 
+Both regular SUT email and Google-hosted SUT email are accepted, for example:
+
+```sql
+insert into public.registry_admins (email, full_name, role, active)
+values ('faculty.name@g.sut.ac.th', 'Faculty Name', 'faculty', true);
+```
+
 Once the first admin is added, approved admins can also manage this table from Supabase SQL Editor. Do not store this list or any service-role key in the GitHub Pages website.
 
-## 4. Add project credentials to the website
+## 4. Faculty passwords
+
+Recommended workflow:
+
+1. Add the faculty email to `registry_admins`.
+2. Let the faculty member request a magic link from `admin.html`.
+3. After they sign in, they can use **Change password** in the admin toolbar to set their own password.
+
+Do not distribute shared or known temporary passwords by email. The website only lets the currently signed-in faculty member update their own Supabase password.
+
+## 5. Add project credentials to the website
 
 Open [`supabase-config.js`](supabase-config.js) and replace:
 
@@ -72,7 +89,7 @@ Use the base Project URL only. Do not paste the REST endpoint ending in `/rest/v
 
 Do not put the service-role key in this website.
 
-## 5. Seed example records
+## 6. Seed example records
 
 After publishing the config:
 
@@ -83,7 +100,7 @@ After publishing the config:
 
 This adds the example Physics equipment and facility records to Supabase.
 
-## 6. Public publishing workflow
+## 7. Public publishing workflow
 
 The public page shows only equipment where:
 
@@ -99,7 +116,7 @@ The admin page can see all records after sign-in.
 - anonymous visitors cannot read draft/internal equipment rows;
 - anonymous visitors can read only facilities linked to approved public equipment;
 - anonymous visitors cannot edit records;
-- only authenticated, active, pre-approved `@sut.ac.th` users in `registry_admins` can manage records and upload photos.
+- only authenticated, active, pre-approved `@sut.ac.th` or `@g.sut.ac.th` users in `registry_admins` can manage records and upload photos.
 
 ## Magic-link troubleshooting
 

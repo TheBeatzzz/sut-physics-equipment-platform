@@ -23,7 +23,7 @@
         <h1 id="auth-title">Sign in to manage shared equipment records.</h1>
         <p>The public webpage can read only approved records. Editing, uploading photos, and reviewing faculty submissions require a pre-approved SUT faculty account.</p>
         <form id="auth-form" class="auth-form">
-          <label>SUT email<input id="auth-email" type="email" autocomplete="email" placeholder="name@sut.ac.th" required /></label>
+          <label>SUT email<input id="auth-email" type="email" autocomplete="email" placeholder="name@sut.ac.th or name@g.sut.ac.th" required /></label>
           <label>Password <span>Optional for magic link</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="Leave blank to send a magic link" /></label>
           <button class="button button-primary" id="auth-submit" type="submit">Sign in / send magic link</button>
         </form>
@@ -36,7 +36,17 @@
             <li>If access is denied, ask the registry admin to confirm your email is active in <code>registry_admins</code>.</li>
           </ol>
         </div>
-        <p class="auth-help" id="auth-message">Use a password if your Supabase account has one, or leave it blank to request an email magic link. Your email must be on the approved faculty list.</p>
+        <div id="access-issue-panel" class="access-issue-panel" hidden>
+          <strong>Email verified, but admin access is not approved yet</strong>
+          <span>You signed in as <b id="access-issue-email">this account</b>, but Supabase did not allow this account to load the internal registry.</span>
+          <ol>
+            <li>Confirm this email is active in <code>public.registry_admins</code>.</li>
+            <li>Confirm the email ends with <code>@sut.ac.th</code> or <code>@g.sut.ac.th</code>.</li>
+            <li>After approval, refresh this page or request a new magic link.</li>
+          </ol>
+          <button class="button button-secondary" id="access-sign-out" type="button">Sign out and use another email</button>
+        </div>
+        <p class="auth-help" id="auth-message">Use a password if your Supabase account has one, or leave it blank to request an email magic link. Your SUT or g.sut.ac.th email must be on the approved faculty list.</p>
       </div>
     </section>
 
@@ -93,6 +103,7 @@
           </label>
           <button class="button button-primary" type="button" data-action="new-record"><span aria-hidden="true">＋</span> Add equipment</button>
           <div class="user-chip" id="user-chip" title="Current registry user"><span>PM</span><div><strong>Program manager</strong><small>Registry editor</small></div></div>
+          <button class="button button-secondary" id="change-password" type="button" hidden>Change password</button>
           <button class="button button-secondary" id="sign-out" type="button" hidden>Sign out</button>
         </div>
       </header>
@@ -195,7 +206,7 @@
             <label>Facility <span aria-hidden="true">*</span><select id="record-facility" name="facilityId" required></select></label>
             <label>Room / location<input name="room" placeholder="e.g. Building C2, Room 311" /></label>
             <label>Custodian / responsible person <span aria-hidden="true">*</span><input name="custodian" required placeholder="Name and title" /></label>
-            <label>Contact email<input type="email" name="email" placeholder="name@sut.ac.th" /></label>
+            <label>Contact email<input type="email" name="email" placeholder="name@sut.ac.th or name@g.sut.ac.th" /></label>
             <label>Research group<input name="researchGroup" placeholder="Group or laboratory" /></label>
             <label>Acquisition year<input type="number" name="acquisitionYear" min="1950" max="2100" placeholder="YYYY" /></label>
           </div></div>
@@ -221,7 +232,7 @@
           </div></div>
           <div class="form-section submitter-section" id="submitter-section"><div class="form-section-title"><span>05</span><div><h3>Faculty submitter</h3><p>Identify who provided this information for follow-up.</p></div></div><div class="form-grid">
             <label>Your name <span aria-hidden="true">*</span><input name="submitterName" placeholder="Faculty member name" /></label>
-            <label>Your SUT email<input type="email" name="submitterEmail" placeholder="name@sut.ac.th" /></label>
+            <label>Your SUT email<input type="email" name="submitterEmail" placeholder="name@sut.ac.th or name@g.sut.ac.th" /></label>
             <label class="span-2">Notes for the registry manager<textarea name="submitterNotes" rows="2" placeholder="Anything the reviewer should verify or update"></textarea></label>
           </div></div>
         </div>
@@ -239,6 +250,20 @@
           <label class="span-2">Description<textarea name="description" rows="3" placeholder="Research focus and capabilities"></textarea></label>
         </div></div>
         <div class="modal-foot"><span></span><div><button class="button button-quiet" type="button" data-close="facility-dialog">Cancel</button><button class="button button-primary" type="submit">Add facility</button></div></div>
+      </form>
+    </dialog>
+
+    <dialog id="password-dialog" class="modal modal-small password-dialog">
+      <form id="password-form" method="dialog">
+        <div class="modal-head"><div><p class="eyebrow">Account security</p><h2>Change password</h2></div><button class="close-button" type="button" data-close="password-dialog"><span class="sr-only">Close</span>×</button></div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <label class="span-2">New password <span aria-hidden="true">*</span><input id="new-password" name="password" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters" /></label>
+            <label class="span-2">Confirm new password <span aria-hidden="true">*</span><input id="confirm-password" name="confirmPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Re-enter the new password" /></label>
+          </div>
+          <p class="password-note">This changes the password for your currently signed-in Supabase account. You can still use magic-link login later if needed.</p>
+        </div>
+        <div class="modal-foot"><p id="password-message" role="status" aria-live="polite"></p><div><button class="button button-quiet" type="button" data-close="password-dialog">Cancel</button><button class="button button-primary" id="password-submit" type="submit">Update password</button></div></div>
       </form>
     </dialog>
 

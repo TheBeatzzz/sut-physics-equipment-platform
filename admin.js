@@ -127,6 +127,7 @@ function setRegistryMode(message = "") {
     $("#registry-mode-note").textContent = backendReady ? "Records are loaded from Supabase and shared across approved faculty accounts." : "Sign in with a pre-approved SUT faculty account to manage equipment data.";
     $("#media-storage-note").innerHTML = "<strong>Supabase storage:</strong> photos upload to the shared equipment-photos bucket. The public page can display photos for approved equipment.";
     $("#sign-out").hidden = !backendReady;
+    $("#change-password").hidden = !backendReady;
     $("#reset-data").disabled = backendReady;
   } else {
     title.textContent = "Prototype storage";
@@ -135,6 +136,7 @@ function setRegistryMode(message = "") {
     $("#registry-mode-note").textContent = "Sample records are marked and must be replaced with verified program data.";
     $("#media-storage-note").innerHTML = "<strong>Prototype note:</strong> photos are saved only in this browser. Configure Supabase to upload them to shared equipment storage.";
     $("#sign-out").hidden = true;
+    $("#change-password").hidden = true;
     $("#reset-data").disabled = false;
   }
 }
@@ -152,11 +154,17 @@ function hideMagicLinkPanel() {
   if (panel) panel.hidden = true;
 }
 
+function hideAccessIssuePanel() {
+  const panel = $("#access-issue-panel");
+  if (panel) panel.hidden = true;
+}
+
 function showAuthGate(message = "") {
   $("#auth-gate").hidden = false;
   document.body.classList.add("auth-required");
   $("#auth-message").textContent = message || "Sign in with a pre-approved SUT faculty account to manage the shared registry.";
   hideMagicLinkPanel();
+  hideAccessIssuePanel();
   db = { ...clone(sampleDatabase), equipment: [], facilities: [] };
   backendReady = false;
   currentSession = null;
@@ -170,7 +178,19 @@ function hideAuthGate() {
   document.body.classList.remove("auth-required");
 }
 
-async function loadSharedRegistry() {
+function showAccessIssue(message, email, emailConfirmed = false) {
+  showAuthGate(emailConfirmed
+    ? "Your email link was confirmed, but this account is not approved for registry administration yet."
+    : message || "This account is signed in but is not approved for registry administration yet.");
+  const panel = $("#access-issue-panel");
+  if (panel) {
+    $("#access-issue-email").textContent = email || "this account";
+    panel.hidden = false;
+  }
+  $("#auth-message").textContent = `${message || "Supabase blocked access to the internal registry."} Ask an existing admin to add ${email || "this email"} to public.registry_admins and set active = true.`;
+}
+
+async function loadSharedRegistry(options = {}) {
   if (!backendConfigured) return false;
   try {
     db = await backend.loadRegistry({ publicOnly: false });
@@ -182,7 +202,9 @@ async function loadSharedRegistry() {
     renderAll();
     return true;
   } catch (error) {
-    showAuthGate(`${error.message || "Could not load the shared registry."} If you are signed in, confirm that your @sut.ac.th email is active in the registry_admins allowlist.`);
+    if (options.showGate !== false) {
+      showAuthGate(`${error.message || "Could not load the shared registry."} If you are signed in, confirm that your @sut.ac.th or @g.sut.ac.th email is active in the registry_admins allowlist.`);
+    }
     return false;
   }
 }
@@ -738,6 +760,7 @@ $("#auth-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!backendConfigured) return;
   hideMagicLinkPanel();
+  hideAccessIssuePanel();
   const email = $("#auth-email").value.trim();
   const password = $("#auth-password").value;
   setBusy($("#auth-submit"), true, password ? "Signing in…" : "Sending link…");
@@ -767,6 +790,52 @@ $("#sign-out").addEventListener("click", async () => {
   }
 });
 
+$("#access-sign-out").addEventListener("click", async () => {
+  try {
+    await backend.signOut();
+    showAuthGate("Signed out. You can request a new magic link with another approved email.");
+  } catch (error) {
+    showToast(error.message || "Could not sign out");
+  }
+});
+
+$("#change-password").addEventListener("click", () => {
+  $("#password-form").reset();
+  $("#password-message").textContent = "";
+  $("#password-message").className = "";
+  $("#password-dialog").showModal();
+  setTimeout(() => $("#new-password").focus(), 50);
+});
+
+$("#password-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  if (!form.reportValidity()) return;
+  const password = $("#new-password").value;
+  const confirmPassword = $("#confirm-password").value;
+  const message = $("#password-message");
+  message.className = "";
+  if (password !== confirmPassword) {
+    message.textContent = "Passwords do not match.";
+    message.classList.add("is-error");
+    $("#confirm-password").focus();
+    return;
+  }
+  setBusy($("#password-submit"), true, "Updating…");
+  try {
+    await backend.updatePassword(password);
+    message.textContent = "Password updated successfully.";
+    message.classList.add("is-success");
+    showToast("Password updated");
+    setTimeout(() => $("#password-dialog").close(), 900);
+  } catch (error) {
+    message.textContent = error.message || "Could not update password.";
+    message.classList.add("is-error");
+  } finally {
+    setBusy($("#password-submit"), false);
+  }
+});
+
 async function boot() {
   setRegistryMode();
   setUserChip();
@@ -775,8 +844,9 @@ async function boot() {
     return;
   }
   try {
-    currentSession = await backend.completeAuthFromUrl();
-    if (currentSession) {
+    const callbackSession = await backend.completeAuthFromUrl();
+    if (callbackSession) {
+      currentSession = callbackSession;
       $("#auth-message").textContent = "Email link confirmed. Loading the shared registry…";
     }
     currentSession = await backend.getSession();
@@ -784,9 +854,15 @@ async function boot() {
       showAuthGate();
       return;
     }
-    await loadSharedRegistry();
+    const loaded = await loadSharedRegistry({ showGate: false });
+    if (!loaded) {
+      showAccessIssue(callbackSession
+        ? "Supabase confirmed your email, but blocked access to the internal registry."
+        : "This account is signed in, but Supabase blocked access to the internal registry.",
+      currentSession.user?.email, Boolean(callbackSession));
+    }
   } catch (error) {
-    showAuthGate(error.message || "Could not connect to Supabase.");
+    showAuthGate(`Magic link sign-in could not be completed: ${error.message || "Could not connect to Supabase."}`);
   }
 }
 

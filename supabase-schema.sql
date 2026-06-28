@@ -11,9 +11,18 @@ create table if not exists public.registry_admins (
   active boolean not null default true,
   notes text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint registry_admins_sut_email check (lower(email) like '%@sut.ac.th')
+  updated_at timestamptz not null default now()
 );
+
+alter table public.registry_admins
+  drop constraint if exists registry_admins_sut_email;
+
+alter table public.registry_admins
+  add constraint registry_admins_sut_email
+  check (
+    lower(email) like '%@sut.ac.th'
+    or lower(email) like '%@g.sut.ac.th'
+  );
 
 create table if not exists public.facilities (
   id text primary key,
@@ -101,7 +110,10 @@ as $$
     from public.registry_admins
     where lower(registry_admins.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
       and registry_admins.active = true
-      and lower(coalesce(auth.jwt() ->> 'email', '')) like '%@sut.ac.th'
+      and (
+        lower(coalesce(auth.jwt() ->> 'email', '')) like '%@sut.ac.th'
+        or lower(coalesce(auth.jwt() ->> 'email', '')) like '%@g.sut.ac.th'
+      )
   );
 $$;
 

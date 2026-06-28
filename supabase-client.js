@@ -248,10 +248,14 @@
 
   const signIn = async (email, password) => {
     const supabase = getClient();
-    const requiredDomain = String(config.facultyEmailDomain || "sut.ac.th").toLowerCase();
+    const allowedDomains = (Array.isArray(config.facultyEmailDomains) && config.facultyEmailDomains.length
+      ? config.facultyEmailDomains
+      : [config.facultyEmailDomain || "sut.ac.th"])
+      .map(domain => String(domain).replace(/^@/, "").trim().toLowerCase())
+      .filter(Boolean);
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith(`@${requiredDomain}`)) {
-      throw new Error(`Use an approved ${requiredDomain} faculty email address.`);
+    if (!allowedDomains.some(domain => normalizedEmail.endsWith(`@${domain}`))) {
+      throw new Error(`Use an approved faculty email ending in ${allowedDomains.map(domain => `@${domain}`).join(" or ")}.`);
     }
     if (password) {
       const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
@@ -273,6 +277,14 @@
     if (error) throw error;
   };
 
+  const updatePassword = async password => {
+    const supabase = getClient();
+    if (!supabase) throw new Error("Supabase is not configured");
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    return data.user;
+  };
+
   window.SUTSupabase = {
     config,
     isConfigured,
@@ -281,6 +293,7 @@
     completeAuthFromUrl,
     signIn,
     signOut,
+    updatePassword,
     loadRegistry,
     saveEquipment,
     deleteEquipment,
