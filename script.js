@@ -143,16 +143,20 @@ const palette = ["#74dfce", "#8fc3ff", "#ff8b5b", "#d7ff3f", "#b59cff", "#ffc95c
 let publicFacilities = [];
 let registryAvailable = false;
 let registryEmptyFallback = false;
+let equipmentAtlasFallback = false;
 
-const prepareFallbackEquipment = () => {
-  publicFacilities = fallbackFacilities.map(facility => ({ ...facility }));
+const prepareFallbackEquipment = ({ keepFacilities = false } = {}) => {
+  const fallbackFacilityList = fallbackFacilities.map(facility => ({ ...facility }));
+  if (!keepFacilities || !publicFacilities.length) publicFacilities = fallbackFacilityList;
+  const fallbackLookup = keepFacilities ? fallbackFacilityList : publicFacilities;
   return fallbackEquipment.map(item => {
     const facilityId = fallbackFacilityByEquipment[item.id] || "";
-    const facility = publicFacilities.find(candidate => candidate.id === facilityId);
+    const facility = fallbackLookup.find(candidate => candidate.id === facilityId);
     return {
       ...item,
       facilityId,
-      facilityName: facility?.name || "Physics Program facility"
+      facilityName: facility?.name || "Physics Program facility",
+      fromRegistry: false
     };
   });
 };
@@ -188,7 +192,8 @@ const loadLocalPublicEquipment = () => {
       return localPublicEquipment;
     }
     registryEmptyFallback = true;
-    return prepareFallbackEquipment();
+    equipmentAtlasFallback = true;
+    return prepareFallbackEquipment({ keepFacilities: registry.facilities.length > 0 });
   } catch {
     return prepareFallbackEquipment();
   }
@@ -197,15 +202,23 @@ const loadLocalPublicEquipment = () => {
 const loadPublicEquipment = async () => {
   registryAvailable = false;
   registryEmptyFallback = false;
+  equipmentAtlasFallback = false;
   if (window.SUTSupabase?.isConfigured?.()) {
     try {
       const registry = await window.SUTSupabase.loadRegistry({ publicOnly: true });
       const publicEquipment = mapPublicEquipment(registry);
-      if (publicEquipment.length || registry.facilities.length) {
+      if (publicEquipment.length) {
         registryAvailable = true;
         return publicEquipment;
       }
+      if (registry.facilities.length) {
+        registryAvailable = true;
+        registryEmptyFallback = true;
+        equipmentAtlasFallback = true;
+        return prepareFallbackEquipment({ keepFacilities: true });
+      }
       registryEmptyFallback = true;
+      equipmentAtlasFallback = true;
       return prepareFallbackEquipment();
     } catch (error) {
       console.warn("Supabase public registry unavailable; using local/prototype data.", error);
@@ -272,13 +285,14 @@ const galleryMarkup = item => {
 
 const publicFacilityCards = () => {
   const knownFacilities = new Set(publicFacilities.map(facility => facility.id).filter(Boolean));
+  const facilityEquipment = equipmentAtlasFallback && registryAvailable ? equipment.filter(item => item.fromRegistry) : equipment;
   const cards = publicFacilities.map((facility, index) => {
-    const linked = equipment.filter(item => item.facilityId === facility.id);
+    const linked = facilityEquipment.filter(item => item.facilityId === facility.id);
     const capabilities = [...new Set(linked.map(item => item.method || item.category).filter(Boolean))].slice(0, 4);
     return { facility, linked, capabilities, color: safeColor(facility.color, palette[index % palette.length]) };
   });
 
-  const orphanGroups = equipment
+  const orphanGroups = facilityEquipment
     .filter(item => !item.facilityId || !knownFacilities.has(item.facilityId))
     .reduce((groups, item) => {
       const key = item.facilityId || "__unassigned";
@@ -353,9 +367,9 @@ const updatePublicSummary = () => {
   }, { all: equipment.length });
 
   document.querySelector("#hero-equipment-count").textContent = String(equipment.length).padStart(2, "0");
-  document.querySelector("#hero-equipment-label").innerHTML = registryMode ? "verified<br />systems" : "example<br />systems";
+  document.querySelector("#hero-equipment-label").innerHTML = registryMode && !equipmentAtlasFallback ? "verified<br />systems" : "example<br />systems";
   document.querySelector("#snapshot-equipment-count").textContent = String(equipment.length).padStart(2, "0");
-  document.querySelector("#snapshot-equipment-label").textContent = registryMode ? "public records" : "example records";
+  document.querySelector("#snapshot-equipment-label").textContent = registryMode && !equipmentAtlasFallback ? "public records" : "example records";
   document.querySelector("#snapshot-facility-count").textContent = String(facilityCount).padStart(2, "0");
   document.querySelector("#snapshot-capability-count").textContent = String(Object.values(counts).slice(1).filter(Boolean).length).padStart(2, "0");
   Object.entries(counts).forEach(([category, count]) => {
@@ -365,7 +379,9 @@ const updatePublicSummary = () => {
 
   document.querySelector("#public-data-status").textContent = registryMode ? "Live registry" : "Prototype data";
   document.querySelector("#public-data-message").textContent = registryMode
-    ? equipment.length
+    ? equipmentAtlasFallback
+      ? "Showing live facilities from Supabase and example equipment until verified public equipment records are available."
+      : equipment.length
       ? "Showing live facilities and verified equipment approved for the public research profile."
       : "Showing live facilities from Supabase. Equipment records will appear after they are verified and marked public."
     : registryEmptyFallback
