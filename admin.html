@@ -233,7 +233,7 @@
 
     <dialog id="facility-dialog" class="modal modal-small">
       <form id="facility-form" method="dialog">
-        <div class="modal-head"><div><p class="eyebrow">Facilities directory</p><h2>Add facility</h2></div><button class="close-button" type="button" data-close="facility-dialog"><span class="sr-only">Close</span>×</button></div>
+        <div class="modal-head"><div><p class="eyebrow">Facilities directory</p><h2 id="facility-form-title">Add facility</h2></div><button class="close-button" type="button" data-close="facility-dialog"><span class="sr-only">Close</span>×</button></div>
         <div class="modal-body"><div class="form-grid">
           <label class="span-2">Facility name <span aria-hidden="true">*</span><input name="name" required placeholder="e.g. Advanced Materials Laboratory" /></label>
           <label>Building<input name="building" placeholder="Building name or code" /></label><label>Room<input name="room" placeholder="Room number" /></label>
@@ -241,7 +241,7 @@
           <label class="span-2">Facility lead<input name="lead" placeholder="Responsible person" /></label>
           <label class="span-2">Description<textarea name="description" rows="3" placeholder="Research focus and capabilities"></textarea></label>
         </div></div>
-        <div class="modal-foot"><p id="facility-message" role="status" aria-live="polite"></p><div><button class="button button-quiet" type="button" data-close="facility-dialog">Cancel</button><button class="button button-primary" type="submit">Add facility</button></div></div>
+        <div class="modal-foot"><p id="facility-message" role="status" aria-live="polite"></p><div><button class="button button-quiet" type="button" data-close="facility-dialog">Cancel</button><button class="button button-primary" id="facility-primary-action" type="submit">Add facility</button></div></div>
       </form>
     </dialog>
 

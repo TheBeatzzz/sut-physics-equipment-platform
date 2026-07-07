@@ -88,6 +88,7 @@ let toastTimer;
 let pendingFeaturePhoto = null;
 let pendingGallery = [];
 let lastFacilityError = null;
+let editingFacilityId = null;
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -235,7 +236,8 @@ async function persistEquipment(record, previousEquipment) {
 async function persistFacility(facility) {
   lastFacilityError = null;
   if (!backendReady) {
-    db.facilities.push(facility);
+    const index = db.facilities.findIndex(item => item.id === facility.id);
+    if (index >= 0) db.facilities[index] = facility; else db.facilities.push(facility);
     save();
     return true;
   }
@@ -398,8 +400,26 @@ function renderSubmissions() {
 function renderFacilities() {
   $("#facility-grid").innerHTML = db.facilities.map((facility, index) => {
     const count = db.equipment.filter(item => item.facilityId === facility.id).length;
-    return `<article class="facility-card"><div class="facility-visual" style="--facility-color:${facility.color || facilityPalette[index % facilityPalette.length]}"></div><div class="facility-card-meta"><span>${clean(facility.id)}</span><span>${clean(facility.building || "Building not set")} · ${clean(facility.room || "Room not set")}</span></div><h2>${clean(facility.name)}</h2><p>${clean(facility.description || "No facility description has been added.")}</p><div class="facility-card-foot"><span><strong>${count}</strong> equipment record${count === 1 ? "" : "s"}</span><span>Lead<br /><b>${clean(facility.lead || "Not assigned")}</b></span></div></article>`;
+    return `<article class="facility-card" data-facility-id="${clean(facility.id)}"><div class="facility-visual" style="--facility-color:${facility.color || facilityPalette[index % facilityPalette.length]}"></div><div class="facility-card-meta"><span>${clean(facility.id)}</span><span>${clean(facility.building || "Building not set")} · ${clean(facility.room || "Room not set")}</span></div><h2>${clean(facility.name)}</h2><p>${clean(facility.description || "No facility description has been added.")}</p><div class="facility-card-foot"><span><strong>${count}</strong> equipment record${count === 1 ? "" : "s"}</span><span>Lead<br /><b>${clean(facility.lead || "Not assigned")}</b></span><button class="text-button" type="button" data-edit-facility="${clean(facility.id)}" aria-label="Edit ${clean(facility.name)}">Edit <span>→</span></button></div></article>`;
   }).join("");
+}
+
+function openFacilityDialog(id = null) {
+  const form = $("#facility-form");
+  const facility = id ? db.facilities.find(item => item.id === id) : null;
+  editingFacilityId = facility?.id || null;
+  form.reset();
+  setFacilityMessage();
+  $("#facility-form-title").textContent = facility ? "Edit facility" : "Add facility";
+  $("#facility-primary-action").textContent = facility ? "Save changes" : "Add facility";
+  if (facility) {
+    ["name", "building", "room", "color", "lead", "description"].forEach(key => {
+      const field = form.elements.namedItem(key);
+      if (field) field.value = facility[key] || (key === "color" ? "#8fd8c8" : "");
+    });
+  }
+  $("#facility-dialog").showModal();
+  setTimeout(() => form.elements.namedItem("name")?.focus(), 50);
 }
 
 function openRecordDialog(mode = "manager", id = null) {
@@ -553,9 +573,7 @@ function setFacilityMessage(message = "", type = "") {
 }
 
 $$('[data-action="new-facility"]').forEach(button => button.addEventListener("click", () => {
-  $("#facility-form").reset();
-  setFacilityMessage();
-  $("#facility-dialog").showModal();
+  openFacilityDialog();
 }));
 $$('[data-close]').forEach(button => button.addEventListener("click", () => $(`#${button.dataset.close}`).close()));
 
@@ -652,21 +670,23 @@ $("#facility-form").addEventListener("submit", async event => {
   try {
     const data = Object.fromEntries(new FormData(form).entries());
     Object.keys(data).forEach(key => { data[key] = String(data[key] || "").trim(); });
-    const duplicate = db.facilities.find(item => item.name.trim().toLowerCase() === data.name.toLowerCase());
+    const duplicate = db.facilities.find(item => item.id !== editingFacilityId && item.name.trim().toLowerCase() === data.name.toLowerCase());
     if (duplicate) {
       setFacilityMessage(`A facility named “${duplicate.name}” already exists.`, "error");
       showToast(`A facility named “${duplicate.name}” already exists`);
       form.elements.namedItem("name")?.focus();
       return;
     }
+    const existing = editingFacilityId ? db.facilities.find(item => item.id === editingFacilityId) : null;
     const numericIds = db.facilities.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
-    const id = `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}`;
-    const facility = { ...data, id, color: data.color || facilityPalette[db.facilities.length % facilityPalette.length] };
+    const id = existing?.id || `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}`;
+    const facility = { ...existing, ...data, id, color: data.color || existing?.color || facilityPalette[db.facilities.length % facilityPalette.length] };
     if (await persistFacility(facility)) {
       $("#facility-dialog").close();
       form.reset();
+      editingFacilityId = null;
       renderAll();
-      showToast(`${facility.name} added to the facilities directory`);
+      showToast(`${facility.name} ${existing ? "updated" : "added to the facilities directory"}`);
     } else {
       setFacilityMessage(lastFacilityError?.message || "Could not save this facility. Confirm your admin account is active in Supabase.", "error");
     }
@@ -676,6 +696,13 @@ $("#facility-form").addEventListener("submit", async event => {
   } finally {
     setBusy(event.submitter, false);
   }
+});
+
+$("#facility-grid").addEventListener("click", event => {
+  const editButton = event.target.closest("[data-edit-facility]");
+  const card = event.target.closest("[data-facility-id]");
+  const id = editButton?.dataset.editFacility || card?.dataset.facilityId;
+  if (id) openFacilityDialog(id);
 });
 
 $("#equipment-table").addEventListener("click", event => {
