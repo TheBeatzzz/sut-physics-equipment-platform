@@ -201,7 +201,7 @@ const loadPublicEquipment = async () => {
     try {
       const registry = await window.SUTSupabase.loadRegistry({ publicOnly: true });
       const publicEquipment = mapPublicEquipment(registry);
-      if (publicEquipment.length) {
+      if (publicEquipment.length || registry.facilities.length) {
         registryAvailable = true;
         return publicEquipment;
       }
@@ -274,10 +274,9 @@ const publicFacilityCards = () => {
   const knownFacilities = new Set(publicFacilities.map(facility => facility.id).filter(Boolean));
   const cards = publicFacilities.map((facility, index) => {
     const linked = equipment.filter(item => item.facilityId === facility.id);
-    if (!linked.length) return null;
     const capabilities = [...new Set(linked.map(item => item.method || item.category).filter(Boolean))].slice(0, 4);
     return { facility, linked, capabilities, color: safeColor(facility.color, palette[index % palette.length]) };
-  }).filter(Boolean);
+  });
 
   const orphanGroups = equipment
     .filter(item => !item.facilityId || !knownFacilities.has(item.facilityId))
@@ -366,7 +365,9 @@ const updatePublicSummary = () => {
 
   document.querySelector("#public-data-status").textContent = registryMode ? "Live registry" : "Prototype data";
   document.querySelector("#public-data-message").textContent = registryMode
-    ? "Showing verified equipment approved for the public research profile."
+    ? equipment.length
+      ? "Showing live facilities and verified equipment approved for the public research profile."
+      : "Showing live facilities from Supabase. Equipment records will appear after they are verified and marked public."
     : registryEmptyFallback
       ? "Supabase is connected, but no equipment has been approved for public display yet. Showing example records until the registry is populated."
       : "Equipment names and figures below are illustrative. Replace them with verified institutional data.";

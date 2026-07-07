@@ -108,6 +108,8 @@ The public page shows only equipment where:
 - `reviewStatus` is `Verified`
 - `publicReady` is checked
 
+Facilities are public profile records: if a facility exists in the `facilities` table, the public Facilities Map can display it even before equipment has been linked or approved.
+
 The admin page can see all records after sign-in.
 
 ## Security note
@@ -115,7 +117,7 @@ The admin page can see all records after sign-in.
 `admin.html` is still a public file on GitHub Pages. That is normal for a static site. The protection is in Supabase:
 
 - anonymous visitors cannot read draft/internal equipment rows;
-- anonymous visitors can read only facilities linked to approved public equipment;
+- anonymous visitors can read public facility profile rows;
 - anonymous visitors cannot edit records;
 - only authenticated, active, pre-approved `@sut.ac.th` or `@g.sut.ac.th` users in `registry_admins` can manage records and upload photos.
 

@@ -149,15 +149,7 @@ drop policy if exists "Public can read facilities" on public.facilities;
 create policy "Public can read facilities"
 on public.facilities for select
 to anon
-using (
-  exists (
-    select 1
-    from public.equipment
-    where equipment.facility_id = facilities.id
-      and equipment.review_status = 'Verified'
-      and equipment.public_ready = true
-  )
-);
+using (true);
 
 drop policy if exists "SUT editors can read all facilities" on public.facilities;
 create policy "SUT editors can read all facilities"
