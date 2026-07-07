@@ -66,6 +66,8 @@ const sampleDatabase = {
   ]
 };
 
+const facilityPalette = ["#8fd8c8", "#9bc7ee", "#f4c26d", "#c1b2df", "#e8a89a", "#b8d276", "#7fc5b2", "#e8a89a"];
+
 const clone = value => JSON.parse(JSON.stringify(value));
 const loadDatabase = () => {
   try {
@@ -391,10 +393,9 @@ function renderSubmissions() {
 }
 
 function renderFacilities() {
-  const colors = ["#8fd8c8", "#9bc7ee", "#f4c26d", "#c1b2df", "#e8a89a", "#b8d276"];
   $("#facility-grid").innerHTML = db.facilities.map((facility, index) => {
     const count = db.equipment.filter(item => item.facilityId === facility.id).length;
-    return `<article class="facility-card"><div class="facility-visual" style="--facility-color:${facility.color || colors[index % colors.length]}"></div><div class="facility-card-meta"><span>${clean(facility.id)}</span><span>${clean(facility.building || "Building not set")} · ${clean(facility.room || "Room not set")}</span></div><h2>${clean(facility.name)}</h2><p>${clean(facility.description || "No facility description has been added.")}</p><div class="facility-card-foot"><span><strong>${count}</strong> equipment record${count === 1 ? "" : "s"}</span><span>Lead<br /><b>${clean(facility.lead || "Not assigned")}</b></span></div></article>`;
+    return `<article class="facility-card"><div class="facility-visual" style="--facility-color:${facility.color || facilityPalette[index % facilityPalette.length]}"></div><div class="facility-card-meta"><span>${clean(facility.id)}</span><span>${clean(facility.building || "Building not set")} · ${clean(facility.room || "Room not set")}</span></div><h2>${clean(facility.name)}</h2><p>${clean(facility.description || "No facility description has been added.")}</p><div class="facility-card-foot"><span><strong>${count}</strong> equipment record${count === 1 ? "" : "s"}</span><span>Lead<br /><b>${clean(facility.lead || "Not assigned")}</b></span></div></article>`;
   }).join("");
 }
 
@@ -632,11 +633,24 @@ $("#facility-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   setBusy(event.submitter, true);
-  const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+  const form = event.currentTarget;
+  const data = Object.fromEntries(new FormData(form).entries());
+  Object.keys(data).forEach(key => { data[key] = String(data[key] || "").trim(); });
+  const duplicate = db.facilities.find(item => item.name.trim().toLowerCase() === data.name.toLowerCase());
+  if (duplicate) {
+    showToast(`A facility named “${duplicate.name}” already exists`);
+    form.elements.name.focus();
+    setBusy(event.submitter, false);
+    return;
+  }
   const numericIds = db.facilities.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
-  const facility = { ...data, id: `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}` };
+  const id = `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}`;
+  const facility = { ...data, id, color: data.color || facilityPalette[db.facilities.length % facilityPalette.length] };
   if (await persistFacility(facility)) {
-    renderAll(); $("#facility-dialog").close(); showToast("Facility added to directory");
+    form.reset();
+    renderAll();
+    $("#facility-dialog").close();
+    showToast(`${facility.name} added to the facilities directory`);
   }
   setBusy(event.submitter, false);
 });
