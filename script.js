@@ -182,8 +182,13 @@ const loadLocalPublicEquipment = () => {
     if (!stored) return prepareFallbackEquipment();
     const registry = JSON.parse(stored);
     if (!Array.isArray(registry.equipment) || !Array.isArray(registry.facilities)) return prepareFallbackEquipment();
-    registryAvailable = true;
-    return mapPublicEquipment(registry);
+    const localPublicEquipment = mapPublicEquipment(registry);
+    if (localPublicEquipment.length) {
+      registryAvailable = true;
+      return localPublicEquipment;
+    }
+    registryEmptyFallback = true;
+    return prepareFallbackEquipment();
   } catch {
     return prepareFallbackEquipment();
   }
@@ -275,10 +280,11 @@ const publicFacilityCards = () => {
   }).filter(Boolean);
 
   const orphanGroups = equipment
-    .filter(item => item.facilityId && !knownFacilities.has(item.facilityId))
+    .filter(item => !item.facilityId || !knownFacilities.has(item.facilityId))
     .reduce((groups, item) => {
-      groups[item.facilityId] ||= [];
-      groups[item.facilityId].push(item);
+      const key = item.facilityId || "__unassigned";
+      groups[key] ||= [];
+      groups[key].push(item);
       return groups;
     }, {});
 
@@ -286,7 +292,7 @@ const publicFacilityCards = () => {
     const first = linked[0];
     cards.push({
       facility: {
-        id: facilityId,
+        id: facilityId === "__unassigned" ? "FAC-TBD" : facilityId,
         name: first.facilityName || "Physics Program facility",
         building: "",
         room: "",
@@ -303,7 +309,22 @@ const publicFacilityCards = () => {
 };
 
 const renderFacilitiesInfographic = () => {
-  const cards = publicFacilityCards();
+  let cards = publicFacilityCards();
+  if (!cards.length && equipment.length) {
+    cards = [{
+      facility: {
+        id: "FAC-TBD",
+        name: "Physics Program Research Facilities",
+        building: "",
+        room: "",
+        lead: "Responsible faculty contacts",
+        description: "Public equipment records are available; facility assignments are being verified."
+      },
+      linked: equipment,
+      capabilities: [...new Set(equipment.map(item => item.method || item.category).filter(Boolean))].slice(0, 4),
+      color: palette[0]
+    }];
+  }
   facilitiesGrid.innerHTML = cards.length ? cards.map(({ facility, linked, capabilities, color }, index) => {
     const location = [facility.building, facility.room].filter(Boolean).join(" · ") || "Location to verify";
     return `
