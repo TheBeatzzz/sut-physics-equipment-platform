@@ -33,7 +33,7 @@ Recommended settings:
 - Enable Email provider.
 - Keep password sign-in enabled.
 - Add the GitHub Pages admin URL to allowed redirect URLs for password recovery/invite flows:
-  `https://thebeatzzz.github.io/sut-physics-equipment-platform/admin.html`
+  `https://thebeatzzz.github.io/sut-physics-facilities/admin.html`
 
 If your faculty use a different email domain, edit both the `registry_admins_sut_email` constraint and the `public.is_sut_editor()` function in `supabase-schema.sql` before running it, or update them in SQL Editor.
 
