@@ -87,6 +87,7 @@ let recordMode = "manager";
 let toastTimer;
 let pendingFeaturePhoto = null;
 let pendingGallery = [];
+let lastFacilityError = null;
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -232,6 +233,7 @@ async function persistEquipment(record, previousEquipment) {
 }
 
 async function persistFacility(facility) {
+  lastFacilityError = null;
   if (!backendReady) {
     db.facilities.push(facility);
     save();
@@ -244,6 +246,7 @@ async function persistFacility(facility) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     return true;
   } catch (error) {
+    lastFacilityError = error;
     showToast(error.message || "Could not save facility to Supabase");
     return false;
   }
@@ -542,7 +545,18 @@ $$('.nav-item').forEach(button => button.addEventListener("click", () => showVie
 $$('[data-view-jump]').forEach(button => button.addEventListener("click", () => showView(button.dataset.viewJump)));
 $$('[data-action="new-record"]').forEach(button => button.addEventListener("click", () => openRecordDialog("manager")));
 $$('[data-action="faculty-submit"]').forEach(button => button.addEventListener("click", () => openRecordDialog("faculty")));
-$$('[data-action="new-facility"]').forEach(button => button.addEventListener("click", () => { $("#facility-form").reset(); $("#facility-dialog").showModal(); }));
+function setFacilityMessage(message = "", type = "") {
+  const target = $("#facility-message");
+  if (!target) return;
+  target.textContent = message;
+  target.className = type ? `is-${type}` : "";
+}
+
+$$('[data-action="new-facility"]').forEach(button => button.addEventListener("click", () => {
+  $("#facility-form").reset();
+  setFacilityMessage();
+  $("#facility-dialog").showModal();
+}));
 $$('[data-close]').forEach(button => button.addEventListener("click", () => $(`#${button.dataset.close}`).close()));
 
 $("#equipment-description").addEventListener("input", event => {
@@ -633,26 +647,35 @@ $("#facility-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   setBusy(event.submitter, true);
+  setFacilityMessage("Saving facility…");
   const form = event.currentTarget;
-  const data = Object.fromEntries(new FormData(form).entries());
-  Object.keys(data).forEach(key => { data[key] = String(data[key] || "").trim(); });
-  const duplicate = db.facilities.find(item => item.name.trim().toLowerCase() === data.name.toLowerCase());
-  if (duplicate) {
-    showToast(`A facility named “${duplicate.name}” already exists`);
-    form.elements.name.focus();
+  try {
+    const data = Object.fromEntries(new FormData(form).entries());
+    Object.keys(data).forEach(key => { data[key] = String(data[key] || "").trim(); });
+    const duplicate = db.facilities.find(item => item.name.trim().toLowerCase() === data.name.toLowerCase());
+    if (duplicate) {
+      setFacilityMessage(`A facility named “${duplicate.name}” already exists.`, "error");
+      showToast(`A facility named “${duplicate.name}” already exists`);
+      form.elements.namedItem("name")?.focus();
+      return;
+    }
+    const numericIds = db.facilities.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
+    const id = `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}`;
+    const facility = { ...data, id, color: data.color || facilityPalette[db.facilities.length % facilityPalette.length] };
+    if (await persistFacility(facility)) {
+      $("#facility-dialog").close();
+      form.reset();
+      renderAll();
+      showToast(`${facility.name} added to the facilities directory`);
+    } else {
+      setFacilityMessage(lastFacilityError?.message || "Could not save this facility. Confirm your admin account is active in Supabase.", "error");
+    }
+  } catch (error) {
+    setFacilityMessage(error.message || "Could not add this facility.", "error");
+    showToast(error.message || "Could not add facility");
+  } finally {
     setBusy(event.submitter, false);
-    return;
   }
-  const numericIds = db.facilities.map(item => Number(item.id.replace(/\D/g,""))).filter(Number.isFinite);
-  const id = `FAC-${String(Math.max(0, ...numericIds) + 1).padStart(2,"0")}`;
-  const facility = { ...data, id, color: data.color || facilityPalette[db.facilities.length % facilityPalette.length] };
-  if (await persistFacility(facility)) {
-    form.reset();
-    renderAll();
-    $("#facility-dialog").close();
-    showToast(`${facility.name} added to the facilities directory`);
-  }
-  setBusy(event.submitter, false);
 });
 
 $("#equipment-table").addEventListener("click", event => {
