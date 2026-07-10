@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Faculty expertise and research contacts for the School of Physics research infrastructure at Suranaree University of Technology."
+    />
+    <title>Faculty & Expertise · SUT Physics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="faculty.js" defer></script>
+  </head>
+  <body class="faculty-page">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <div class="prototype-note" role="note">
+      <span id="faculty-data-status">Prototype data</span>
+      <span id="faculty-data-message">Faculty profiles are generated from verified public faculty records when available.</span>
+      <a href="admin.html">Open internal registry <span aria-hidden="true">→</span></a>
+    </div>
+
+    <header class="site-header">
+      <a class="identity" href="index.html" aria-label="Research facilities overview">
+        <span class="identity-mark" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span class="identity-copy">
+          <strong>School of Physics</strong>
+          <small>Faculty & Expertise</small>
+          <small class="identity-institute">Institute of Science, Suranaree University of Technology</small>
+        </span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span>Menu</span><i aria-hidden="true"></i>
+      </button>
+
+      <nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">Overview</a>
+        <a href="#directory">Faculty</a>
+        <a href="#expertise">Expertise</a>
+        <a href="#contact">Contact</a>
+        <a class="nav-cta" href="index.html#equipment">Explore equipment <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="top" class="faculty-hero" aria-labelledby="faculty-title">
+        <div class="faculty-hero-copy">
+          <p class="eyebrow"><span>Faculty directory</span><span>Research mentorship</span></p>
+          <h1 id="faculty-title">Find the people<br /><em>behind the instruments.</em></h1>
+          <p class="hero-intro">
+            Connect research questions with faculty expertise, facility leads, and responsible equipment contacts across the Physics Program.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#directory">View faculty contacts <span aria-hidden="true">↓</span></a>
+            <a class="text-link" href="index.html#facilities">Browse facilities <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+
+        <div class="faculty-constellation" aria-label="Abstract network of faculty, facilities, and research systems">
+          <div class="faculty-node node-main"><span id="faculty-contact-count">00</span><small>public<br />contacts</small></div>
+          <div class="faculty-node node-a"><span id="faculty-facility-count">00</span><small>facility<br />clusters</small></div>
+          <div class="faculty-node node-b"><span id="faculty-system-count">00</span><small>public<br />systems</small></div>
+          <i class="link link-a"></i>
+          <i class="link link-b"></i>
+          <i class="link link-c"></i>
+        </div>
+      </section>
+
+      <section class="signal-strip faculty-strip" aria-label="Faculty profile summary">
+        <p class="section-index">01 / Directory status</p>
+        <div class="signal-grid">
+          <div><strong id="snapshot-faculty-count">00</strong><span>public contacts</span></div>
+          <div><strong id="snapshot-area-count">00</strong><span>expertise areas</span></div>
+          <div><strong id="snapshot-linked-count">00</strong><span>linked systems</span></div>
+          <p id="faculty-status-summary">Add verified custodians, emails, and research groups in the registry to publish named faculty profiles.</p>
+        </div>
+      </section>
+
+      <section id="directory" class="faculty-directory section-shell" aria-labelledby="directory-title">
+        <div class="section-heading">
+          <p class="section-index">02 / People</p>
+          <div>
+            <h2 id="directory-title">Faculty contacts<br />by research area.</h2>
+            <p>Profiles are built from faculty-maintained records, so every faculty member can appear whether or not they own equipment.</p>
+          </div>
+        </div>
+
+        <div id="faculty-filters" class="filters" role="group" aria-label="Filter faculty by expertise">
+          <button type="button" class="filter is-active" data-filter="all" aria-pressed="true">All expertise <span data-faculty-filter-count="all">00</span></button>
+          <button type="button" class="filter" data-filter="observe" aria-pressed="false">Observe <span data-faculty-filter-count="observe">00</span></button>
+          <button type="button" class="filter" data-filter="fabricate" aria-pressed="false">Fabricate <span data-faculty-filter-count="fabricate">00</span></button>
+          <button type="button" class="filter" data-filter="measure" aria-pressed="false">Measure <span data-faculty-filter-count="measure">00</span></button>
+          <button type="button" class="filter" data-filter="model" aria-pressed="false">Model <span data-faculty-filter-count="model">00</span></button>
+        </div>
+
+        <div id="faculty-grid" class="faculty-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="expertise" class="faculty-expertise section-shell" aria-labelledby="expertise-title">
+        <div class="section-heading">
+          <p class="section-index">03 / Expertise map</p>
+          <div>
+            <h2 id="expertise-title">Research groups<br />connected to facilities.</h2>
+            <p>Use this view to understand where faculty mentorship, specialist methods, and shared instrumentation currently intersect.</p>
+          </div>
+        </div>
+
+        <div id="expertise-grid" class="expertise-grid"></div>
+      </section>
+
+      <section id="contact" class="contact faculty-contact" aria-labelledby="faculty-contact-title">
+        <div class="contact-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p class="section-index">04 / Collaborate</p>
+        <div class="contact-copy">
+          <h2 id="faculty-contact-title">Need the right<br />faculty contact?</h2>
+          <p>Start with the facility or equipment record closest to your research question. The registry can route inquiries to the responsible faculty contact once verified emails are added.</p>
+          <a class="button button-light" href="index.html#contact">Discuss a project <span aria-hidden="true">↗</span></a>
+          <small>Named profiles require verified registry data before publication.</small>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="identity identity-footer">
+        <span class="identity-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="identity-copy">
+          <strong>School of Physics</strong>
+          <small>Faculty & Expertise</small>
+          <small class="identity-institute">Institute of Science, Suranaree University of Technology</small>
+        </span>
+      </div>
+      <p>Prototype interface · Replace sample content before publication</p>
+      <a href="#top">Back to top <span aria-hidden="true">↑</span></a>
+    </footer>
+  </body>
+</html>

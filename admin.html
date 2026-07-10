@@ -66,6 +66,11 @@
           Submissions
           <span class="nav-count is-alert" id="submission-nav-count">0</span>
         </button>
+        <button class="nav-item" data-view="faculty" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-8 9a8 8 0 0 1 16 0M17 11l2 2 3-4"/></svg>
+          Faculty
+          <span class="nav-count" id="faculty-nav-count">0</span>
+        </button>
         <button class="nav-item" data-view="facilities" type="button">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 12h2v2H9zM13 12h2v2h-2zM9 17h6"/></svg>
           Facilities
@@ -159,6 +164,14 @@
           </div>
         </section>
 
+        <section class="view" data-view-panel="faculty" aria-labelledby="faculty-title">
+          <div class="view-heading compact-heading">
+            <div><p class="eyebrow">Faculty profiles</p><h1 id="faculty-title">People, interests, and academic links</h1><p class="heading-description">Maintain every faculty member, including colleagues who do not currently own equipment records.</p></div>
+            <button class="button button-primary" type="button" data-action="new-faculty"><span aria-hidden="true">＋</span> Add faculty</button>
+          </div>
+          <div id="faculty-profile-grid" class="faculty-admin-grid"></div>
+        </section>
+
         <section class="view" data-view-panel="facilities" aria-labelledby="facilities-title">
           <div class="view-heading compact-heading">
             <div><p class="eyebrow">Spaces & laboratories</p><h1 id="facilities-title">Facilities directory</h1><p class="heading-description">Group equipment by the physical spaces where research, teaching, and technical support happen.</p></div>
@@ -246,6 +259,39 @@
           <label class="span-2">Description<textarea name="description" rows="3" placeholder="Research focus and capabilities"></textarea></label>
         </div></div>
         <div class="modal-foot"><p id="facility-message" role="status" aria-live="polite"></p><div><button class="button button-quiet" type="button" data-close="facility-dialog">Cancel</button><button class="button button-primary" id="facility-primary-action" type="submit">Add facility</button></div></div>
+      </form>
+    </dialog>
+
+    <dialog id="faculty-dialog" class="modal">
+      <form id="faculty-form" method="dialog">
+        <div class="modal-head"><div><p class="eyebrow">Faculty profile</p><h2 id="faculty-form-title">Add faculty profile</h2></div><button class="close-button" type="button" data-close="faculty-dialog"><span class="sr-only">Close</span>×</button></div>
+        <div class="modal-body">
+          <div class="form-section"><div class="form-section-title"><span>01</span><div><h3>Identity</h3><p>Publish the faculty member and connect their profile to their login email.</p></div></div><div class="form-grid">
+            <label>Full name <span aria-hidden="true">*</span><input name="name" required placeholder="Faculty member name" /></label>
+            <label>Title / role<input name="title" placeholder="Assistant Professor, Lecturer, Researcher…" /></label>
+            <label>Email<input name="email" type="email" placeholder="name@sut.ac.th or name@g.sut.ac.th" /></label>
+            <label>Owner login email<input name="ownerEmail" type="email" placeholder="Usually the same as email" /></label>
+            <label>Office<input name="office" placeholder="Building and room" /></label>
+            <label>Phone<input name="phone" placeholder="Office phone" /></label>
+            <label>Profile color<input name="color" type="color" value="#8fd8c8" /></label>
+            <label class="checkbox-label"><input type="checkbox" name="publicReady" checked /><span><strong>Show on public faculty page</strong><small>Uncheck to keep this profile internal.</small></span></label>
+            <label class="span-2">Short biography<textarea name="bio" rows="4" placeholder="Brief research biography or profile introduction"></textarea></label>
+          </div></div>
+          <div class="form-section"><div class="form-section-title"><span>02</span><div><h3>Infographic content</h3><p>Enter one item per line. These lists drive the public profile infographic.</p></div></div><div class="form-grid">
+            <label class="span-2">Research interests<textarea name="researchInterests" rows="4" placeholder="Quantum materials&#10;Optical spectroscopy&#10;Computational modeling"></textarea></label>
+            <label class="span-2">Research highlights<textarea name="highlights" rows="3" placeholder="Major project, method, dataset, facility, or publication theme"></textarea></label>
+            <label class="span-2">Activities<textarea name="activities" rows="3" placeholder="Teaching, outreach, supervision, collaborations, seminars"></textarea></label>
+            <label class="span-2">Recognitions<textarea name="recognitions" rows="3" placeholder="Awards, appointments, grants, society roles"></textarea></label>
+          </div></div>
+          <div class="form-section"><div class="form-section-title"><span>03</span><div><h3>Academic profile links</h3><p>Connect external scholarly profiles such as Scopus, ResearchGate, Google Scholar, and ORCID.</p></div></div><div class="form-grid">
+            <label>Academic profile<input name="academic" type="url" placeholder="https://..." /></label>
+            <label>Scopus<input name="scopus" type="url" placeholder="https://www.scopus.com/..." /></label>
+            <label>ResearchGate<input name="researchGate" type="url" placeholder="https://www.researchgate.net/profile/..." /></label>
+            <label>Google Scholar<input name="googleScholar" type="url" placeholder="https://scholar.google.com/..." /></label>
+            <label>ORCID<input name="orcid" type="url" placeholder="https://orcid.org/0000-0000-0000-0000" /></label>
+          </div></div>
+        </div>
+        <div class="modal-foot"><p id="faculty-message" role="status" aria-live="polite"></p><div><button class="button button-quiet" type="button" data-close="faculty-dialog">Cancel</button><button class="button button-primary" id="faculty-primary-action" type="submit">Add profile</button></div></div>
       </form>
     </dialog>
 

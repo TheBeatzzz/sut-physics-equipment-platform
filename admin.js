@@ -32,8 +32,63 @@ const sampleRecord = (id, name, category, facilityId, researchGroup, reviewStatu
   sample: true
 });
 
+const sampleFacultyProfile = (id, name, title, researchInterests, color, role = "") => ({
+  id,
+  name,
+  title,
+  email: "",
+  office: "Office to be verified",
+  phone: "",
+  bio: role
+    ? `Dummy faculty profile for ${role}. Replace this with verified biography and research information before publication.`
+    : "Dummy faculty profile. Replace this with verified biography and research information before publication.",
+  researchInterests,
+  highlights: ["Research highlight to update"],
+  activities: role ? [role, "Recent activity to update"] : ["Recent activity to update"],
+  recognitions: ["Recognition or appointment to update"],
+  profileLinks: {
+    academic: "",
+    scopus: "",
+    researchGate: "",
+    googleScholar: "",
+    orcid: ""
+  },
+  color,
+  publicReady: true,
+  ownerEmail: "",
+  createdAt: "2026-06-20",
+  updatedAt: "2026-06-25",
+  sample: true
+});
+
 const sampleDatabase = {
-  meta: { version: 3, institution: "Suranaree University of Technology", program: "Physics Program", prototype: true },
+  meta: { version: 5, institution: "Suranaree University of Technology", program: "Physics Program", prototype: true },
+  faculty: [
+    sampleFacultyProfile("FACULTY-001", "Yupeng Yan", "Professor", ["Research interests to update", "Physics program faculty"], "#8fd8c8"),
+    sampleFacultyProfile("FACULTY-002", "Santi Maensiri", "Professor", ["Research interests to update", "Materials physics"], "#9bc7ee", "Dean"),
+    sampleFacultyProfile("FACULTY-003", "Sirichoke Jungthawan", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#f4c26d", "Head"),
+    sampleFacultyProfile("FACULTY-004", "Ayut Limphirat", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#e8a89a", "Vice Dean"),
+    sampleFacultyProfile("FACULTY-005", "Prapan Maenyum", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#b8d276"),
+    sampleFacultyProfile("FACULTY-006", "Poemwai Chainakul", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#c1b2df"),
+    sampleFacultyProfile("FACULTY-007", "Puangratana Pairo", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#7fc5b2"),
+    sampleFacultyProfile("FACULTY-008", "Wittawat Saenrang", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#74dfce"),
+    sampleFacultyProfile("FACULTY-009", "Worawat Meevassana", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#8fc3ff", "Vice Dean"),
+    sampleFacultyProfile("FACULTY-010", "Prayoon Songsiriritthikul", "Associate Professor", ["Research interests to update", "Physics program faculty"], "#ff8b5b"),
+    sampleFacultyProfile("FACULTY-011", "Panomsak Meemon", "Associate Professor", ["Research interests to update", "Biomedical optics"], "#d7ff3f"),
+    sampleFacultyProfile("FACULTY-012", "Chinorat Kobdaj", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#b59cff"),
+    sampleFacultyProfile("FACULTY-013", "Khanchai Kosolthongkee", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#ffc95c", "Vice Dean"),
+    sampleFacultyProfile("FACULTY-014", "Christoph Herold", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#8fd8c8"),
+    sampleFacultyProfile("FACULTY-015", "Tirawut Worrakitpoonpol", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#9bc7ee"),
+    sampleFacultyProfile("FACULTY-016", "Michael F. Smith", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#f4c26d"),
+    sampleFacultyProfile("FACULTY-017", "Ittipon Fongkaew", "Assistant Professor", ["Research interests to update", "Physics program faculty"], "#e8a89a"),
+    sampleFacultyProfile("FACULTY-018", "Warintorn Srithawong", "Dr.", ["Research interests to update", "Physics program faculty"], "#b8d276"),
+    sampleFacultyProfile("FACULTY-019", "Narongrit Ritjoho", "Dr.", ["Research interests to update", "Physics program faculty"], "#c1b2df"),
+    sampleFacultyProfile("FACULTY-020", "Wiwat Nuansing", "Dr.", ["Research interests to update", "Physics program faculty"], "#7fc5b2"),
+    sampleFacultyProfile("FACULTY-021", "Monchai Jitvisate", "Dr.", ["Research interests to update", "Physics program faculty"], "#74dfce"),
+    sampleFacultyProfile("FACULTY-022", "Artitsupa Boontan", "Dr.", ["Research interests to update", "Physics program faculty"], "#8fc3ff"),
+    sampleFacultyProfile("FACULTY-023", "Sorawis Sangtawesin", "Dr.", ["Research interests to update", "Physics program faculty"], "#ff8b5b"),
+    sampleFacultyProfile("FACULTY-024", "Wanvisa Talataisong", "Dr.", ["Research interests to update", "Physics program faculty"], "#d7ff3f")
+  ],
   facilities: [
     { id: "FAC-01", name: "Advanced Microscopy & Biomedical Photonics Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for confocal imaging, fluorescence lifetime, optical coherence tomography, and biomedical optical design.", color: "#8fd8c8" },
     { id: "FAC-02", name: "Infrared & Optical Spectroscopy Facility", building: "To be verified", room: "To be verified", lead: "Faculty lead to verify", description: "Example facility cluster for infrared spectroscopy, surface plasmon analysis, and optical reflectance and transmittance measurements.", color: "#9bc7ee" },
@@ -69,10 +124,34 @@ const sampleDatabase = {
 const facilityPalette = ["#8fd8c8", "#9bc7ee", "#f4c26d", "#c1b2df", "#e8a89a", "#b8d276", "#7fc5b2", "#e8a89a"];
 
 const clone = value => JSON.parse(JSON.stringify(value));
+const normalizeList = value => Array.isArray(value) ? value.filter(Boolean) : String(value || "").split(/\r?\n|,/).map(item => item.trim()).filter(Boolean);
+const facultyNameCorrections = {
+  "Worawat Meewassana": "Worawat Meevassana",
+  "Prayoon Songsirittikul": "Prayoon Songsiriritthikul",
+  "Khanchar Kosalathongkee": "Khanchai Kosolthongkee",
+  "Michale F. Smith": "Michael F. Smith",
+  "Artitsupa Bootan": "Artitsupa Boontan"
+};
+const normalizeFacultyNames = profiles => profiles.map(profile => ({
+  ...profile,
+  name: facultyNameCorrections[profile.name] || profile.name
+}));
+const isGenericSampleFaculty = profiles =>
+  Array.isArray(profiles) &&
+  profiles.length > 0 &&
+  profiles.every(profile => profile.sample && String(profile.name || "").toLowerCase().includes("to verify"));
+const normalizeDatabase = value => ({
+  ...clone(sampleDatabase),
+  ...value,
+  meta: { ...clone(sampleDatabase.meta), ...(value?.meta || {}) },
+  faculty: isGenericSampleFaculty(value?.faculty) ? clone(sampleDatabase.faculty) : Array.isArray(value?.faculty) ? normalizeFacultyNames(value.faculty) : [],
+  facilities: Array.isArray(value?.facilities) ? value.facilities : [],
+  equipment: Array.isArray(value?.equipment) ? value.equipment : []
+});
 const loadDatabase = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : clone(sampleDatabase);
+    return saved ? normalizeDatabase(JSON.parse(saved)) : clone(sampleDatabase);
   } catch { return clone(sampleDatabase); }
 };
 
@@ -89,6 +168,8 @@ let pendingFeaturePhoto = null;
 let pendingGallery = [];
 let lastFacilityError = null;
 let editingFacilityId = null;
+let lastFacultyError = null;
+let editingFacultyId = null;
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -129,7 +210,7 @@ function setRegistryMode(message = "") {
     title.textContent = backendReady ? "Supabase registry" : "Supabase login";
     detail.textContent = message || (backendReady ? "Shared database active" : "Sign in required");
     $("#registry-mode-title").textContent = backendReady ? "Live shared registry" : "Faculty login required";
-    $("#registry-mode-note").textContent = backendReady ? "Records are loaded from Supabase and shared across approved faculty accounts." : "Sign in with a pre-approved SUT faculty account to manage equipment data.";
+    $("#registry-mode-note").textContent = backendReady ? "Records are loaded from Supabase and shared across approved faculty accounts." : "Sign in with a pre-approved SUT faculty account to manage equipment and faculty profile data.";
     $("#media-storage-note").innerHTML = "<strong>Supabase storage:</strong> photos upload to the shared equipment-photos bucket. The public page can display photos for approved equipment.";
     $("#sign-out").hidden = !backendReady;
     $("#change-password").hidden = !backendReady;
@@ -165,7 +246,7 @@ function showAuthGate(message = "", options = {}) {
   document.body.classList.add("auth-required");
   $("#auth-message").textContent = message || "Sign in with a pre-approved SUT faculty account to manage the shared registry.";
   hideAccessIssuePanel();
-  db = { ...clone(sampleDatabase), equipment: [], facilities: [] };
+  db = { ...clone(sampleDatabase), faculty: [], equipment: [], facilities: [] };
   backendReady = false;
   if (clearSession) currentSession = null;
   setRegistryMode();
@@ -194,7 +275,7 @@ function showAccessIssue(message, email, emailConfirmed = false) {
 async function loadSharedRegistry(options = {}) {
   if (!backendConfigured) return false;
   try {
-    db = await backend.loadRegistry({ publicOnly: false });
+    db = normalizeDatabase(await backend.loadRegistry({ publicOnly: false }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     lastRegistryError = null;
     backendReady = true;
@@ -254,6 +335,27 @@ async function persistFacility(facility) {
   }
 }
 
+async function persistFaculty(profile) {
+  lastFacultyError = null;
+  if (!backendReady) {
+    const index = db.faculty.findIndex(item => item.id === profile.id);
+    if (index >= 0) db.faculty[index] = profile; else db.faculty.push(profile);
+    save();
+    return true;
+  }
+  try {
+    const savedProfile = await backend.saveFaculty(profile);
+    const index = db.faculty.findIndex(item => item.id === savedProfile.id);
+    if (index >= 0) db.faculty[index] = savedProfile; else db.faculty.push(savedProfile);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    return true;
+  } catch (error) {
+    lastFacultyError = error;
+    showToast(error.message || "Could not save faculty profile to Supabase");
+    return false;
+  }
+}
+
 function showToast(message) {
   clearTimeout(toastTimer);
   $("#toast p").textContent = message;
@@ -265,7 +367,7 @@ function showView(view, options = {}) {
   activeView = view;
   $$(".nav-item").forEach(item => item.classList.toggle("is-active", item.dataset.view === view));
   $$(".view").forEach(panel => panel.classList.toggle("is-visible", panel.dataset.viewPanel === view));
-  const labels = { overview: "Registry overview", equipment: "Equipment registry", submissions: "Faculty submissions", facilities: "Facilities directory", data: "Data & export" };
+  const labels = { overview: "Registry overview", equipment: "Equipment registry", submissions: "Faculty submissions", faculty: "Faculty profiles", facilities: "Facilities directory", data: "Data & export" };
   $("#page-context").textContent = labels[view];
   $("#sidebar").classList.remove("is-open");
   $(".mobile-menu").setAttribute("aria-expanded", "false");
@@ -280,6 +382,7 @@ function renderAll() {
   renderNavigationCounts();
   populateFacilityOptions();
   renderOverview();
+  renderFacultyProfiles();
   renderEquipmentTable();
   renderSubmissions();
   renderFacilities();
@@ -288,6 +391,8 @@ function renderAll() {
 function renderNavigationCounts() {
   $("#equipment-nav-count").textContent = db.equipment.length;
   $("#submission-nav-count").textContent = db.equipment.filter(item => item.reviewStatus === "Submitted").length || "";
+  const facultyCount = $("#faculty-nav-count");
+  if (facultyCount) facultyCount.textContent = db.faculty.length;
 }
 
 function renderOverview() {
@@ -297,9 +402,9 @@ function renderOverview() {
   const publicReady = db.equipment.filter(item => item.publicReady && item.reviewStatus === "Verified").length;
   const metrics = [
     ["Equipment records", db.equipment.length, "total", "+ Registry"],
+    ["Faculty profiles", db.faculty.length, "total", "People"],
     ["Verified records", verified, `${percentage(verified, db.equipment.length)}%`, "Quality"],
-    ["Operational", operational, `${percentage(operational, db.equipment.length)}%`, "Availability"],
-    ["Public-ready", publicReady, "profiles", "Website"]
+    ["Public-ready", publicReady, "systems", "Website"]
   ];
   $("#metric-grid").innerHTML = metrics.map(([label, value, note, tag]) => `<article class="metric-card"><div class="metric-label"><span>${label}</span><span>${tag}</span></div><div class="metric-value"><strong>${value}</strong><small>${note}</small></div></article>`).join("");
 
@@ -397,11 +502,120 @@ function renderSubmissions() {
   }).join("") : `<div class="empty-state panel"><span>✓</span><h2>The queue is clear</h2><p>No faculty submissions currently need review.</p></div>`;
 }
 
+function profileLinks(profile) {
+  return profile.profileLinks && typeof profile.profileLinks === "object" ? profile.profileLinks : {};
+}
+
+function renderFacultyProfiles() {
+  const grid = $("#faculty-profile-grid");
+  if (!grid) return;
+  grid.innerHTML = db.faculty.length ? db.faculty.map((profile, index) => {
+    const links = profileLinks(profile);
+    const linkCount = Object.values(links).filter(Boolean).length;
+    const equipmentCount = db.equipment.filter(item => {
+      const emailMatch = profile.email && item.email && item.email.toLowerCase() === profile.email.toLowerCase();
+      const nameMatch = profile.name && item.custodian && item.custodian.toLowerCase().includes(profile.name.toLowerCase());
+      return emailMatch || nameMatch;
+    }).length;
+    const interests = normalizeList(profile.researchInterests).slice(0, 4);
+    return `<article class="faculty-admin-card" data-faculty-id="${clean(profile.id)}" style="--faculty-color:${profile.color || facilityPalette[index % facilityPalette.length]}">
+      <div class="faculty-admin-head"><span>${clean(initials(profile.name))}</span><small>${profile.publicReady === false ? "Hidden" : "Public"}</small></div>
+      <h2>${clean(profile.name)}</h2>
+      <p>${clean(profile.title || "Title to verify")}</p>
+      <div class="faculty-admin-tags">${interests.map(item => `<span>${clean(item)}</span>`).join("") || `<span>Interests to add</span>`}</div>
+      <div class="faculty-admin-foot">
+        <span><strong>${equipmentCount}</strong> linked equipment</span>
+        <span><strong>${linkCount}</strong> profile links</span>
+        <button class="text-button" type="button" data-edit-faculty="${clean(profile.id)}" aria-label="Edit ${clean(profile.name)}">Edit <span>→</span></button>
+      </div>
+    </article>`;
+  }).join("") : `<div class="empty-state panel"><span>+</span><h2>No faculty profiles yet</h2><p>Add every faculty member here, including those without equipment records.</p></div>`;
+}
+
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "FP";
+  return parts.slice(0, 2).map(part => part[0]).join("").toUpperCase();
+}
+
 function renderFacilities() {
   $("#facility-grid").innerHTML = db.facilities.map((facility, index) => {
     const count = db.equipment.filter(item => item.facilityId === facility.id).length;
     return `<article class="facility-card" data-facility-id="${clean(facility.id)}"><div class="facility-visual" style="--facility-color:${facility.color || facilityPalette[index % facilityPalette.length]}"></div><div class="facility-card-meta"><span>${clean(facility.id)}</span><span>${clean(facility.building || "Building not set")} · ${clean(facility.room || "Room not set")}</span></div><h2>${clean(facility.name)}</h2><p>${clean(facility.description || "No facility description has been added.")}</p><div class="facility-card-foot"><span><strong>${count}</strong> equipment record${count === 1 ? "" : "s"}</span><span>Lead<br /><b>${clean(facility.lead || "Not assigned")}</b></span><button class="text-button" type="button" data-edit-facility="${clean(facility.id)}" aria-label="Edit ${clean(facility.name)}">Edit <span>→</span></button></div></article>`;
   }).join("");
+}
+
+function setFacultyMessage(message = "", type = "") {
+  const target = $("#faculty-message");
+  if (!target) return;
+  target.textContent = message;
+  target.className = type ? `is-${type}` : "";
+}
+
+function openFacultyDialog(id = null) {
+  const form = $("#faculty-form");
+  const profile = id ? db.faculty.find(item => item.id === id) : null;
+  editingFacultyId = profile?.id || null;
+  form.reset();
+  setFacultyMessage();
+  $("#faculty-form-title").textContent = profile ? "Edit faculty profile" : "Add faculty profile";
+  $("#faculty-primary-action").textContent = profile ? "Save profile" : "Add profile";
+  if (profile) {
+    ["name", "title", "email", "office", "phone", "bio", "color", "ownerEmail"].forEach(key => {
+      const field = form.elements.namedItem(key);
+      if (field) field.value = profile[key] || (key === "color" ? "#8fd8c8" : "");
+    });
+    ["researchInterests", "highlights", "activities", "recognitions"].forEach(key => {
+      const field = form.elements.namedItem(key);
+      if (field) field.value = normalizeList(profile[key]).join("\n");
+    });
+    const links = profileLinks(profile);
+    ["academic", "scopus", "researchGate", "googleScholar", "orcid"].forEach(key => {
+      const field = form.elements.namedItem(key);
+      if (field) field.value = links[key] || "";
+    });
+    form.elements.publicReady.checked = profile.publicReady !== false;
+  } else {
+    form.elements.publicReady.checked = true;
+    form.elements.color.value = facilityPalette[db.faculty.length % facilityPalette.length];
+  }
+  $("#faculty-dialog").showModal();
+  setTimeout(() => form.elements.namedItem("name")?.focus(), 50);
+}
+
+function facultyFromForm(form) {
+  const data = Object.fromEntries(new FormData(form).entries());
+  Object.keys(data).forEach(key => { data[key] = String(data[key] || "").trim(); });
+  const existing = editingFacultyId ? db.faculty.find(item => item.id === editingFacultyId) : null;
+  const numericIds = db.faculty.map(item => Number(String(item.id).replace(/\D/g,""))).filter(Number.isFinite);
+  const id = existing?.id || `FACULTY-${String(Math.max(0, ...numericIds) + 1).padStart(3, "0")}`;
+  return {
+    ...existing,
+    id,
+    name: data.name,
+    title: data.title,
+    email: data.email,
+    office: data.office,
+    phone: data.phone,
+    bio: data.bio,
+    researchInterests: normalizeList(data.researchInterests),
+    highlights: normalizeList(data.highlights),
+    activities: normalizeList(data.activities),
+    recognitions: normalizeList(data.recognitions),
+    profileLinks: {
+      academic: data.academic,
+      scopus: data.scopus,
+      researchGate: data.researchGate,
+      googleScholar: data.googleScholar,
+      orcid: data.orcid
+    },
+    color: data.color || existing?.color || facilityPalette[db.faculty.length % facilityPalette.length],
+    publicReady: form.elements.publicReady.checked,
+    ownerEmail: data.ownerEmail || data.email,
+    createdAt: existing?.createdAt || today(),
+    updatedAt: today(),
+    sample: existing?.sample || false
+  };
 }
 
 function openFacilityDialog(id = null) {
@@ -565,6 +779,7 @@ $$('.nav-item').forEach(button => button.addEventListener("click", () => showVie
 $$('[data-view-jump]').forEach(button => button.addEventListener("click", () => showView(button.dataset.viewJump)));
 $$('[data-action="new-record"]').forEach(button => button.addEventListener("click", () => openRecordDialog("manager")));
 $$('[data-action="faculty-submit"]').forEach(button => button.addEventListener("click", () => openRecordDialog("faculty")));
+$$('[data-action="new-faculty"]').forEach(button => button.addEventListener("click", () => openFacultyDialog()));
 function setFacilityMessage(message = "", type = "") {
   const target = $("#facility-message");
   if (!target) return;
@@ -705,6 +920,43 @@ $("#facility-grid").addEventListener("click", event => {
   if (id) openFacilityDialog(id);
 });
 
+$("#faculty-profile-grid").addEventListener("click", event => {
+  const editButton = event.target.closest("[data-edit-faculty]");
+  const card = event.target.closest("[data-faculty-id]");
+  const id = editButton?.dataset.editFaculty || card?.dataset.facultyId;
+  if (id) openFacultyDialog(id);
+});
+
+$("#faculty-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  setBusy(event.submitter, true);
+  setFacultyMessage("Saving faculty profile…");
+  try {
+    const profile = facultyFromForm(event.currentTarget);
+    const duplicate = db.faculty.find(item => item.id !== profile.id && item.name.trim().toLowerCase() === profile.name.trim().toLowerCase());
+    if (duplicate) {
+      setFacultyMessage(`A faculty profile named “${duplicate.name}” already exists.`, "error");
+      showToast(`A faculty profile named “${duplicate.name}” already exists`);
+      return;
+    }
+    if (await persistFaculty(profile)) {
+      $("#faculty-dialog").close();
+      event.currentTarget.reset();
+      editingFacultyId = null;
+      renderAll();
+      showToast(`${profile.name} ${db.faculty.some(item => item.id === profile.id) ? "profile saved" : "added to faculty profiles"}`);
+    } else {
+      setFacultyMessage(lastFacultyError?.message || "Could not save this faculty profile. Confirm your admin account is active in Supabase.", "error");
+    }
+  } catch (error) {
+    setFacultyMessage(error.message || "Could not save this faculty profile.", "error");
+    showToast(error.message || "Could not save faculty profile");
+  } finally {
+    setBusy(event.submitter, false);
+  }
+});
+
 $("#equipment-table").addEventListener("click", event => {
   const deleteButton = event.target.closest("[data-delete]");
   const editButton = event.target.closest("[data-edit]");
@@ -747,18 +999,20 @@ $("#import-json").addEventListener("change", async event => {
   try {
     const imported = JSON.parse(await file.text());
     if (!Array.isArray(imported.equipment) || !Array.isArray(imported.facilities)) throw new Error("Invalid schema");
+    imported.faculty = Array.isArray(imported.faculty) ? imported.faculty : [];
     imported.equipment = imported.equipment.map(item => ({
       ...item,
       description: String(item.description || "").slice(0, DESCRIPTION_LIMIT)
     }));
-    const confirmed = await askConfirm(backendReady ? "Import into the shared registry?" : "Replace the browser database?", `Import ${imported.equipment.length} equipment records and ${imported.facilities.length} facilities from “${file.name}”?`);
+    const confirmed = await askConfirm(backendReady ? "Import into the shared registry?" : "Replace the browser database?", `Import ${imported.faculty.length} faculty profiles, ${imported.equipment.length} equipment records, and ${imported.facilities.length} facilities from “${file.name}”?`);
     if (confirmed) {
       if (backendReady) {
+        for (const profile of imported.faculty) await backend.saveFaculty(profile);
         for (const facility of imported.facilities) await backend.saveFacility(facility);
         for (const record of imported.equipment) await backend.saveEquipment(record);
         await loadSharedRegistry();
       } else {
-        db = imported; save(); renderAll();
+        db = normalizeDatabase(imported); save(); renderAll();
       }
       showView("overview"); showToast("Registry backup imported");
     }
@@ -767,11 +1021,12 @@ $("#import-json").addEventListener("change", async event => {
 });
 
 $("#seed-sample-data").addEventListener("click", async event => {
-  const confirmed = await askConfirm("Seed example records?", `Add or update ${sampleDatabase.equipment.length} example equipment records and ${sampleDatabase.facilities.length} facilities in ${backendReady ? "Supabase" : "this browser"}?`);
+  const confirmed = await askConfirm("Seed example records?", `Add or update ${sampleDatabase.faculty.length} example faculty profiles, ${sampleDatabase.equipment.length} example equipment records, and ${sampleDatabase.facilities.length} facilities in ${backendReady ? "Supabase" : "this browser"}?`);
   if (!confirmed) return;
   setBusy(event.currentTarget, true, "Seeding…");
   try {
     if (backendReady) {
+      for (const profile of sampleDatabase.faculty) await backend.saveFaculty(profile);
       for (const facility of sampleDatabase.facilities) await backend.saveFacility(facility);
       for (const record of sampleDatabase.equipment) await backend.saveEquipment(record);
       await loadSharedRegistry();

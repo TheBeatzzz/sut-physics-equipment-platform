@@ -107,6 +107,48 @@
     color: facility.color || null
   });
 
+  const asArray = value => Array.isArray(value) ? value : [];
+
+  const camelFaculty = row => ({
+    id: row.id,
+    name: row.name,
+    title: row.title || "",
+    email: row.email || "",
+    office: row.office || "",
+    phone: row.phone || "",
+    bio: row.bio || "",
+    researchInterests: asArray(row.research_interests),
+    highlights: asArray(row.highlights),
+    activities: asArray(row.activities),
+    recognitions: asArray(row.recognitions),
+    profileLinks: row.profile_links && typeof row.profile_links === "object" ? row.profile_links : {},
+    color: row.color || "",
+    publicReady: row.public_ready !== false,
+    ownerEmail: row.owner_email || "",
+    sample: Boolean(row.sample),
+    createdAt: String(row.created_at || "").slice(0, 10),
+    updatedAt: String(row.updated_at || "").slice(0, 10)
+  });
+
+  const snakeFaculty = profile => ({
+    id: profile.id,
+    name: profile.name,
+    title: profile.title || null,
+    email: profile.email || null,
+    office: profile.office || null,
+    phone: profile.phone || null,
+    bio: profile.bio || null,
+    research_interests: asArray(profile.researchInterests).filter(Boolean),
+    highlights: asArray(profile.highlights).filter(Boolean),
+    activities: asArray(profile.activities).filter(Boolean),
+    recognitions: asArray(profile.recognitions).filter(Boolean),
+    profile_links: profile.profileLinks && typeof profile.profileLinks === "object" ? profile.profileLinks : {},
+    color: profile.color || null,
+    public_ready: profile.publicReady !== false,
+    owner_email: profile.ownerEmail || profile.email || null,
+    sample: Boolean(profile.sample)
+  });
+
   const dataUrlToBlob = dataUrl => {
     const [header, base64] = String(dataUrl).split(",");
     const contentType = header.match(/data:([^;]+)/)?.[1] || "image/jpeg";
@@ -151,28 +193,34 @@
     if (!supabase) throw new Error("Supabase is not configured");
 
     const facilitiesQuery = supabase.from("facilities").select("*").order("id", { ascending: true });
+    let facultyQuery = supabase.from("faculty").select("*").order("name", { ascending: true });
     let equipmentQuery = supabase.from("equipment").select("*").order("updated_at", { ascending: false });
     if (publicOnly) {
+      facultyQuery = facultyQuery.eq("public_ready", true);
       equipmentQuery = equipmentQuery.eq("review_status", "Verified").eq("public_ready", true);
     }
 
-    const [{ data: facilities, error: facilityError }, { data: equipment, error: equipmentError }] = await Promise.all([
+    const [{ data: facilities, error: facilityError }, { data: faculty, error: facultyError }, { data: equipment, error: equipmentError }] = await Promise.all([
       facilitiesQuery,
+      facultyQuery,
       equipmentQuery
     ]);
 
     if (facilityError) throw facilityError;
+    const facultyTableMissing = facultyError && ["42P01", "PGRST205"].includes(facultyError.code);
+    if (facultyError && !facultyTableMissing) throw facultyError;
     if (equipmentError) throw equipmentError;
 
     return {
       meta: {
-        version: 4,
+        version: 5,
         institution: "Suranaree University of Technology",
         program: "Physics Program",
         backend: "supabase",
         loadedAt: new Date().toISOString()
       },
       facilities: (facilities || []).map(camelFacility),
+      faculty: facultyTableMissing ? [] : (faculty || []).map(camelFaculty),
       equipment: (equipment || []).map(camelEquipment)
     };
   };
@@ -204,6 +252,23 @@
       .single();
     if (error) throw error;
     return camelFacility(data);
+  };
+
+  const saveFaculty = async profile => {
+    const supabase = getClient();
+    const { data, error } = await supabase
+      .from("faculty")
+      .upsert(snakeFaculty(profile), { onConflict: "id" })
+      .select()
+      .single();
+    if (error) throw error;
+    return camelFaculty(data);
+  };
+
+  const deleteFaculty = async id => {
+    const supabase = getClient();
+    const { error } = await supabase.from("faculty").delete().eq("id", id);
+    if (error) throw error;
   };
 
   const getSession = async () => {
@@ -291,6 +356,8 @@
     saveEquipment,
     deleteEquipment,
     saveFacility,
+    saveFaculty,
+    deleteFaculty,
     photoSrc
   };
 })();
